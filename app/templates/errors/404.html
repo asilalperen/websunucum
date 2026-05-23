@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; padding: 50px; background-color: var(--box-bg); border: 2px solid var(--accent-orange); border-radius: 15px; box-shadow: 0 0 20px var(--accent-orange); margin-top: 40px;">
+    <h1 style="color: var(--accent-orange); font-size: 4em; margin-bottom: 10px; text-shadow: 2px 2px 5px black;">404</h1>
+    <h2 style="color: var(--text-main); font-size: 2em; margin-bottom: 20px;">Top Çemberden Döndü!</h2>
+    <p style="font-size: 1.2em; font-family: monospace; color: #aaa; background-color: #111; padding: 10px; border-radius: 5px; display: inline-block;">> Aradığın anı Kozmik Kasa'da bulunamadı...</p>
+    
+    <div style="margin: 40px auto; max-width: 450px; border: 3px solid #333; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+        <img id="basketGif" src="" alt="404 Basketball GIF" style="width: 100%; display: block;">
+    </div>
+    
+    <a href="{{ url_for('main.index') }}" style="display: inline-block; padding: 12px 25px; background-color: var(--accent-orange); color: white; border-radius: 5px; font-weight: bold; text-decoration: none; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">Ana Ekrana Dön</a>
+</div>
+
+<script>
+    // 4 Farklı Basketbol GIF'i
+    const gifs = [
+        "https://media1.tenor.com/m/h2sK9sVz7V4AAAAd/basketball-fail.gif",
+        "https://media1.tenor.com/m/Wq_4R_0L3F0AAAAd/nba-funny.gif",
+        "https://media1.tenor.com/m/qV0G5S7u-S4AAAAd/fail-basketball.gif",
+        "https://media1.tenor.com/m/nXY-8oX-HnQAAAAd/basketball-fail.gif"
+    ];
+    // Rastgele birini seç
+    const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+    document.getElementById('basketGif').src = randomGif;
+</script>
+{% endblock %}

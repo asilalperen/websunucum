@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="desktop-environment" id="desktopBg">
+    
+    {% if current_user.is_authenticated %}
+        <div class="desktop-icon" onclick="openWindow('memoryFolder')" style="position: absolute; top: 20px; left: 20px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3767/3767084.png" alt="Klasör">
+            <span class="icon-text">Anı Odası</span>
+        </div>
+
+        <div class="desktop-icon" onclick="openWindow('galleryFolder')" style="position: absolute; top: 120px; left: 20px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3342/3342137.png" alt="Galeri">
+            <span class="icon-text">Galerim</span>
+        </div>
+
+        <div class="desktop-icon" onclick="openWindow('settingsWindow')" style="position: absolute; top: 220px; left: 20px;">
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5)); margin-bottom: 5px;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span class="icon-text">Ayarlar</span>
+        </div>
+    {% else %}
+        <div style="text-align: center; margin-top: 20%; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px; display: inline-block;">
+            <h2 style="color: var(--accent-orange);">Sisteme Giriş Yapılmadı</h2>
+            <p>Masaüstüne erişmek için <a href="{{ url_for('login') }}">giriş yapmalısın.</a></p>
+        </div>
+    {% endif %}
+
+    <div class="os-window" id="memoryFolder" style="display: none; width: 500px;">
+        <div class="window-header">
+            <span>📝 Yeni Anı Ekle</span>
+            <button class="close-btn" onclick="closeWindow('memoryFolder')">X</button>
+        </div>
+        <div class="window-content">
+            <form action="" method="post" enctype="multipart/form-data" style="margin-bottom: 0;">
+                {{ form.hidden_tag() }}
+                {{ form.post(rows="3", style="width: 100%; margin-bottom: 10px;", placeholder="Bugün neler yaşandı?") }}
+                <label for="image" class="custom-file-upload">📸 Fotoğraf Seç</label>
+                {{ form.image(id="image", style="display: none;", multiple="multiple", accept="image/*") }}
+                <div id="imagePreviewContainer"></div>
+                {{ form.submit(style="margin-top: 10px;") }}
+            </form>
+        </div>
+    </div>
+
+    <div class="os-window" id="galleryFolder" style="display: none;">
+        <div class="window-header">
+            <span>🖼️ C:\Users\{{ current_user.username }}\Galerim</span>
+            <button class="close-btn" onclick="closeWindow('galleryFolder')">X</button>
+        </div>
+        <div class="window-content">
+            <div>
+                <h4 style="margin-top: 0; color: var(--accent-orange); border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Kaydedilen Anılar</h4>
+                
+                <div class="masonry-grid">
+                    {% for post in on_this_day_posts %}
+                        <div class="masonry-item" style="border-color: #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <span class="on-this-day-badge">Geçmişte Bugün</span>
+                                {% if post.author == current_user %}
+                                <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="post" onsubmit="return confirm('Bu anıyı silmek istediğinize emin misiniz?');">
+                                    <button type="submit" style="background: none; border: none; cursor: pointer; color: #ff4c4c; padding: 0;" title="Anıyı Sil">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            <p class="memory-date" style="margin: 0; font-size: 13px; color: #ccc; cursor: pointer;" title="Fotoğrafları Görüntüle">{{ post.timestamp.strftime('%d %B %Y') }}</p>
+                            <p style="margin: 5px 0;">{{ post.body }}</p>
+                            {% if post.image_file %}
+                                <div class="memory-gallery">
+                                {% for img in post.image_file.split(',') %}
+                                    <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img">
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    {% for post in posts %}
+                        {% if post not in on_this_day_posts %}
+                        <div class="masonry-item">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <p class="memory-date" style="margin: 0; font-size: 13px; color: #aaa; cursor: pointer;" title="Fotoğrafları Görüntüle">{{ post.timestamp.strftime('%Y-%m-%d %H:%M') }}</p>
+                                {% if post.author == current_user %}
+                                <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="post" onsubmit="return confirm('Bu anıyı silmek istediğinize emin misiniz?');">
+                                    <button type="submit" style="background: none; border: none; cursor: pointer; color: #ff4c4c; padding: 0;" title="Anıyı Sil">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            <p style="margin: 5px 0;">{{ post.body }}</p>
+                            {% if post.image_file %}
+                                <div class="memory-gallery">
+                                {% for img in post.image_file.split(',') %}
+                                    <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img">
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        {% if not on_this_day_posts %}
+                            <p style="color: #666; font-size: 13px;">Henüz arşivde anı yok.</p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="os-window" id="settingsWindow" style="display: none; width: 500px;">
+        <div class="window-header">
+            <span>⚙️ Kişiselleştirme - Arkaplan</span>
+            <button class="close-btn" onclick="closeWindow('settingsWindow')">X</button>
+        </div>
+        
+        <div class="window-content">
+            <h4 style="margin-top: 0; margin-bottom: 10px;">🎨 Tema Seçimi</h4>
+            <select id="themeSelect" onchange="changeTheme()" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--accent-brown); cursor: inherit; margin-bottom: 20px;">
+                <option value="light">Aydınlık Tema</option>
+                <option value="dark">Karanlık Tema</option>
+            </select>
+
+            <h4 style="margin-top: 0; margin-bottom: 10px;">🖱️ İmleç (Cursor) Seçimi</h4>
+            <select id="cursorSelect" onchange="changeCursor()" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--accent-brown); cursor: inherit; margin-bottom: 20px;">
+                <option value="default">Standart Tarayıcı İmleci</option>
+                <option value="lol">League of Legends Eldiveni</option>
+                <option value="minecraft">Minecraft Kılıcı</option>
+                <option value="retro">Retro Windows Oku</option>
+            </select>
+
+            <h4 style="margin-top: 0;">Masaüstü Arkaplanını Seç</h4>
+            <div class="wallpaper-grid">
+                <img src="https://images.unsplash.com/photo-1550684376-efcbd6e3f031?q=80&w=1974&auto=format&fit=crop" class="wallpaper-thumb" onclick="changeBg(this.src)">
+                <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1974&auto=format&fit=crop" class="wallpaper-thumb" onclick="changeBg(this.src)">
+                <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1974&auto=format&fit=crop" class="wallpaper-thumb" onclick="changeBg(this.src)">
+                <img src="https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1989&auto=format&fit=crop" class="wallpaper-thumb" onclick="changeBg(this.src)">
+                <img src="https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=1974&auto=format&fit=crop" class="wallpaper-thumb" onclick="changeBg(this.src)">
+                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop" class="wallpaper-thumb" onclick="changeBg(this.src)">
+            </div>
+            <p style="font-size: 11px; color: #888; margin-top: 15px;">*Kendi fotoğraflarını eklemek istersen koddan URL'leri değiştirebilirsin.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Pencere açma
+    function openWindow(windowId) {
+        // Önce hepsini kapat (aynı anda iki pencere karışmasın)
+        document.getElementById("memoryFolder").style.display = "none";
+        document.getElementById("galleryFolder").style.display = "none";
+        document.getElementById("settingsWindow").style.display = "none";
+        // İstenileni aç
+        document.getElementById(windowId).style.display = "flex";
+        // Hangi pencerenin açık kaldığını kaydet (sayfa yenilenince kapanmasın diye)
+        sessionStorage.setItem('activeWindow', windowId);
+    }
+
+    // Pencere kapatma
+    function closeWindow(windowId) {
+        document.getElementById(windowId).style.display = "none";
+        sessionStorage.removeItem('activeWindow');
+    }
+
+    // Arkaplan değiştirme
+    function changeBg(url) {
+        document.getElementById('desktopBg').style.backgroundImage = "url('" + url + "')";
+        localStorage.setItem('selectedWallpaper', url);
+    }
+
+    // Sayfa yüklendiğinde arkaplanı uygula ve açık olan pencereyi geri getir
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const savedWallpaper = localStorage.getItem('selectedWallpaper');
+        if (savedWallpaper) {
+            document.getElementById('desktopBg').style.backgroundImage = "url('" + savedWallpaper + "')";
+        }
+        
+        const activeWindow = sessionStorage.getItem('activeWindow');
+        if (activeWindow && document.getElementById(activeWindow)) {
+            openWindow(activeWindow);
+        }
+    });
+
+    // Fotoğraf önizleme ve çoklu dosya biriktirme
+    let accumulatedFiles = new DataTransfer();
+
+    document.getElementById('image').addEventListener('change', function(e) {
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        
+        // Yeni seçilen dosyaları listemize ekle
+        const newFiles = e.target.files;
+        if (newFiles.length > 0) {
+            Array.from(newFiles).forEach(file => {
+                accumulatedFiles.items.add(file);
+            });
+        }
+        
+        // Input'un seçili dosyalarını, bizim biriktirdiğimiz listeyle güncelle (Böylece form gönderildiğinde hepsi gider)
+        e.target.files = accumulatedFiles.files;
+        
+        // Önizlemeleri baştan çiz
+        previewContainer.innerHTML = ''; 
+        
+        Array.from(accumulatedFiles.files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = document.createElement('img');
+                    img.src = evt.target.result;
+                    img.className = 'preview-img';
+                    previewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+
+    // Tema değiştirme
+    function changeTheme() {
+        const selected = document.getElementById('themeSelect').value;
+        localStorage.setItem('mementos_theme', selected);
+        if (typeof applyTheme === 'function') {
+            applyTheme();
+        }
+    }
+
+    // İmleç değiştirme
+    function changeCursor() {
+        const selected = document.getElementById('cursorSelect').value;
+        localStorage.setItem('mementos_cursor', selected);
+        if (typeof applyCursor === 'function') {
+            applyCursor();
+        }
+    }
+</script>
+{% endblock %}

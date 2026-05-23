@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - MementOS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a class="navbar-brand" href="{{ url_for('main.index') }}">MementOS</a>
+        <div class="navbar-links">
+            <a href="{{ url_for('main.index') }}">Ana Ekran</a>
+            {% if current_user.is_anonymous %}
+                <a href="{{ url_for('auth.login') }}">Giriş Yap</a>
+                <a href="{{ url_for('auth.register') }}">Kayıt Ol</a>
+            {% else %}
+                <a href="{{ url_for('main.feed') }}">Akış</a>
+                <a href="{{ url_for('main.user', username=current_user.username) }}">Profil</a>
+                <a href="{{ url_for('auth.logout') }}">Çıkış Yap</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Fotoğraf Görüntüleyici Modalı -->
+    <div id="image-viewer-modal" style="display: none;">
+        <span id="close-viewer">&times;</span>
+        <span id="prev-viewer" class="nav-arrow" style="display: none;">&#10094;</span>
+        <img id="viewer-image" src="" alt="Tam Boy Resim">
+        <span id="next-viewer" class="nav-arrow" style="display: none;">&#10095;</span>
+    </div>
+
+    <script>
+        function applyTheme() {
+            const theme = localStorage.getItem('mementos_theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+            const select = document.getElementById('themeSelect');
+            if (select) {
+                select.value = theme;
+            }
+        }
+        applyTheme(); // Sayfa yüklenirken hemen çalıştır (FOUC engellemek için)
+
+        function applyCursor() {
+            const cursor = localStorage.getItem('mementos_cursor') || 'default';
+            document.body.className = document.body.className.replace(/\bcursor-\S+/g, '').trim();
+            if (cursor !== 'default') {
+                document.body.classList.add('cursor-' + cursor);
+            }
+            const select = document.getElementById('cursorSelect');
+            if (select) {
+                select.value = cursor;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', applyCursor);
+
+        // Fotoğraf Görüntüleyici Mantığı (Lightbox ve Çoklu Galeri)
+        let currentGalleryImages = [];
+        let currentImageIndex = 0;
+
+        function updateModalImage() {
+            if (currentGalleryImages.length > 0) {
+                const modalImg = document.getElementById('viewer-image');
+                modalImg.src = currentGalleryImages[currentImageIndex];
+                
+                // Resmi değiştirince zoom'u resetle
+                modalImg.classList.remove('zoomed-in');
+                
+                document.getElementById('prev-viewer').style.display = currentGalleryImages.length > 1 ? 'block' : 'none';
+                document.getElementById('next-viewer').style.display = currentGalleryImages.length > 1 ? 'block' : 'none';
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            // Butonlara basıldıysa (örn. silme butonu), galeri açma işlemini iptal et
+            if (e.target.closest('button')) {
+                return;
+            }
+
+            // Kartın geneline (.masonry-item) tıklandığında galeri oluştur
+            const masonryItem = e.target.closest('.masonry-item');
+            if (masonryItem) {
+                const images = masonryItem.querySelectorAll('.memory-img');
+                if (images.length > 0) {
+                    currentGalleryImages = Array.from(images).map(img => img.src);
+                    if (e.target.classList.contains('memory-img')) {
+                        currentImageIndex = currentGalleryImages.indexOf(e.target.src);
+                    } else {
+                        currentImageIndex = 0; // Karta veya tarihe tıklandıysa ilki açılsın
+                    }
+                    
+                    const modal = document.getElementById('image-viewer-modal');
+                    updateModalImage();
+                    modal.style.display = 'flex';
+                    document.body.classList.add('modal-open');
+                }
+            } 
+            // Yükleme formundaki önizleme resimlerine tıklandığında (Çoklu Galeri gibi davranır)
+            else if (e.target.classList.contains('preview-img')) {
+                const previewContainer = e.target.closest('#imagePreviewContainer');
+                if (previewContainer) {
+                    const images = previewContainer.querySelectorAll('.preview-img');
+                    if (images.length > 0) {
+                        currentGalleryImages = Array.from(images).map(img => img.src);
+                        currentImageIndex = currentGalleryImages.indexOf(e.target.src);
+                        
+                        const modal = document.getElementById('image-viewer-modal');
+                        updateModalImage();
+                        modal.style.display = 'flex';
+                        document.body.classList.add('modal-open');
+                    }
+                }
+            }
+        });
+
+        document.getElementById('prev-viewer').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (currentGalleryImages.length > 1) {
+                currentImageIndex = (currentImageIndex - 1 + currentGalleryImages.length) % currentGalleryImages.length;
+                updateModalImage();
+            }
+        });
+
+        document.getElementById('next-viewer').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (currentGalleryImages.length > 1) {
+                currentImageIndex = (currentImageIndex + 1) % currentGalleryImages.length;
+                updateModalImage();
+            }
+        });
+
+        // Resme tıklayınca büyüt/küçült (Zoom In/Out)
+        document.getElementById('viewer-image').addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('zoomed-in');
+        });
+
+        function closeViewer() {
+            const modal = document.getElementById('image-viewer-modal');
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            document.getElementById('viewer-image').classList.remove('zoomed-in');
+        }
+
+        document.getElementById('close-viewer').addEventListener('click', closeViewer);
+
+        document.getElementById('image-viewer-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeViewer();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('image-viewer-modal');
+                if (modal && modal.style.display === 'flex') {
+                    closeViewer();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

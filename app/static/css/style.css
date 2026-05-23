@@ -1,0 +1,533 @@
+/* =========================================
+   RENK PALETİ VE TEMEL AYARLAR (Aydınlık Tema - Varsayılan)
+   ========================================= */
+:root {
+    --bg-dark: #F5F5F5;      /* Açık arkaplan */
+    --box-bg: #FFFFFF;       /* Kutu arka planı (beyaz) */
+    --text-main: #14110F;    /* Koyu metin */
+    --accent-orange: #E56B1F;/* Basketbol Turuncusu */
+    --accent-brown: #D49A73; /* Açık Kahve / Kenarlık */
+    --input-bg: #EEEEEE;     /* Input kutuları açık gri */
+    --window-header: #E0E0E0;/* Pencere başlığı */
+    --window-header-text: #333;
+    --masonry-bg: rgba(255, 255, 255, 0.85);
+}
+
+.dark-mode {
+    --bg-dark: #14110F;      /* Çok koyu kahve/siyah */
+    --box-bg: #211C18;       /* Kutu arka planı */
+    --text-main: #EFEBE9;    /* Kırık beyaz metin */
+    --accent-orange: #E56B1F;
+    --accent-brown: #8A4315; 
+    --input-bg: #1A1613;     
+    --window-header: rgba(0, 0, 0, 0.5);
+    --window-header-text: #eee;
+    --masonry-bg: rgba(20, 15, 10, 0.85);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Özel Scrollbar (Modern Tasarım) */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1); 
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(229, 107, 31, 0.5); /* Accent Orange'ın yarı saydam hali */
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(229, 107, 31, 0.8);
+}
+
+/* =========================================
+   ÜST MENÜ (NAVBAR)
+   ========================================= */
+.navbar {
+    background-color: var(--box-bg);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid var(--accent-orange);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.navbar-brand {
+    font-size: 1.5em;
+    font-weight: 900;
+    color: var(--accent-orange);
+    text-decoration: none;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.navbar-links a {
+    color: var(--text-main);
+    text-decoration: none;
+    margin-left: 20px;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.navbar-links a:hover {
+    color: var(--accent-orange);
+}
+
+/* =========================================
+   GENEL KUTU (FORM VE PROFİL İÇİN)
+   ========================================= */
+.container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: var(--box-bg);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+    border: 1px solid #312822;
+}
+
+a {
+    color: var(--accent-orange);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* =========================================
+   FORM ELEMANLARI (Giriş/Kayıt vb.)
+   ========================================= */
+input[type="text"], input[type="password"], input[type="email"] {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 20px 0;
+    background-color: var(--input-bg);
+    border: 1px solid var(--accent-brown);
+    color: var(--text-main);
+    border-radius: 6px;
+    box-sizing: border-box; 
+    transition: border 0.3s ease;
+}
+
+input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus {
+    border-color: var(--accent-orange);
+    outline: none;
+    box-shadow: 0 0 8px rgba(229, 107, 31, 0.3);
+}
+
+input[type="submit"] {
+    background-color: var(--accent-orange);
+    color: #fff;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1em;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s;
+    width: 100%;
+}
+
+input[type="submit"]:hover {
+    background-color: #c25717;
+}
+
+input[type="submit"]:active {
+    transform: scale(0.98);
+}
+
+.flashes {
+    list-style-type: none;
+    padding: 0;
+}
+
+.flashes li {
+    background-color: rgba(138, 67, 21, 0.2);
+    color: var(--accent-orange);
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    border-left: 5px solid var(--accent-orange);
+    font-weight: bold;
+}
+
+/* =========================================
+   İŞLETİM SİSTEMİ (MASAÜSTÜ) GÖRÜNÜMÜ
+   ========================================= */
+
+/* Ana Masaüstü Arkaplanı */
+.desktop-environment {
+    position: fixed;
+    top: 60px; /* Yaklaşık navbar yüksekliği */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(100vh - 60px); 
+    background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2064&auto=format&fit=crop'); /* Bliss tarzı */
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    padding: 20px;
+    box-sizing: border-box;
+    z-index: 10;
+}
+
+/* Masaüstü İkonları (Windows Tarzı) */
+.desktop-icon {
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background 0.2s;
+}
+
+.desktop-icon:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px dotted rgba(255, 255, 255, 0.5);
+}
+
+.desktop-icon img {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 5px;
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+}
+
+.icon-text {
+    color: white;
+    font-size: 13px;
+    text-shadow: 1px 1px 3px black;
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    font-weight: bold;
+}
+
+/* Açılan Klasör Penceresi (Windows Style) */
+.os-window {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 650px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(30, 25, 20, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.05);
+    overflow: hidden;
+    z-index: 100;
+}
+
+/* Pencere Üst Çubuğu */
+.window-header {
+    background-color: var(--window-header);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--accent-brown);
+    color: var(--window-header-text);
+    font-size: 15px;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: bold;
+    user-select: none;
+}
+
+.close-btn {
+    background-color: #ff4c4c;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    width: 25px;
+    height: 25px;
+    font-weight: bold;
+}
+
+.close-btn:hover {
+    background-color: #ff1c1c;
+}
+
+.window-content {
+    padding: 20px;
+    background-color: transparent;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Galerim penceresine özel scroll düzeltmeleri (Kesin çözüm) */
+#galleryFolder {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 85vh; /* Ekrandan taşmasın */
+}
+
+#galleryFolder .window-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.window-content textarea {
+    background-color: var(--input-bg);
+    color: white;
+    border: 1px solid var(--accent-brown);
+    border-radius: 5px;
+    padding: 10px;
+    resize: vertical;
+}
+
+.window-content textarea:focus {
+    border-color: var(--accent-orange);
+    outline: none;
+}
+
+/* Şık Fotoğraf Yükleme Butonu */
+.custom-file-upload {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 5px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    transition: background 0.3s;
+}
+
+.custom-file-upload:hover {
+    background-color: #444;
+    border-color: var(--accent-orange);
+}
+
+/* =========================================
+   KİŞİSELLEŞTİRİLEBİLİR İMLEÇLER
+   ========================================= */
+body.cursor-lol, body.cursor-lol * {
+    cursor: url('https://cur.cursors-4u.net/games/gam-13/gam1282.cur'), auto !important;
+}
+body.cursor-minecraft, body.cursor-minecraft * {
+    cursor: url('https://cdn.custom-cursor.com/db/8615/32/minecraft-diamond-sword-cursor.png'), auto !important;
+}
+body.cursor-retro, body.cursor-retro * {
+    cursor: url('https://win98icons.alexmeub.com/icons/png/cursor-0.png'), auto !important;
+}
+
+/* =========================================
+   MASONRY GRID (Kolaj) VE DİĞERLERİ
+   ========================================= */
+.masonry-grid {
+    column-count: 2;
+    column-gap: 15px;
+    padding-right: 5px;
+}
+
+.masonry-item {
+    break-inside: avoid;
+    margin-bottom: 20px;
+    background: var(--masonry-bg);
+    border: 1px solid var(--accent-brown);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.masonry-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    border-color: var(--accent-orange);
+}
+
+/* Önizleme Alanı */
+#imagePreviewContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.preview-img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid var(--accent-orange);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.preview-img:hover {
+    transform: scale(1.1);
+}
+
+/* Anı Kartı Çoklu Fotoğraf Galerisi */
+.memory-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.memory-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.memory-img:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+}
+
+.on-this-day-badge {
+    display: inline-block;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    color: #000;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.wallpaper-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.wallpaper-thumb {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: 0.2s;
+}
+
+.wallpaper-thumb:hover {
+    border-color: var(--accent-orange);
+    transform: scale(1.05);
+}
+
+/* =========================================
+   FOTOĞRAF GÖRÜNTÜLEYİCİ MODALI (LIGHTBOX)
+   ========================================= */
+#image-viewer-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 9999;
+    /* display: none; -> JavaScript ile 'flex' yapılacak */
+    justify-content: center;
+    align-items: center;
+}
+
+#image-viewer-modal img {
+    max-width: 90%;
+    max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+    animation: zoomIn 0.3s ease;
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+}
+
+#image-viewer-modal img.zoomed-in {
+    transform: scale(1.2);
+    cursor: zoom-out;
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 50px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: color 0.3s, transform 0.2s;
+    user-select: none;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.nav-arrow:hover {
+    color: white;
+    transform: translateY(-50%) scale(1.1);
+}
+
+#prev-viewer {
+    left: 20px;
+}
+
+#next-viewer {
+    right: 20px;
+}
+
+#close-viewer {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 40px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: color 0.3s, transform 0.2s;
+    user-select: none;
+    z-index: 10000;
+}
+
+#close-viewer:hover {
+    color: #ff4c4c;
+    transform: scale(1.1);
+}
+
+/* Modal açıkken sayfanın kaydırılmasını engelleme */
+body.modal-open {
+    overflow: hidden;
+}
