@@ -24,7 +24,9 @@ class User(UserMixin, db.Model):
     profile_pic: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
     
     # İlişkiler
-    posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author')
+    posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
+    comments: so.WriteOnlyMapped['Comment'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
+    likes: so.WriteOnlyMapped['Like'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     
     # Takipçi ilişkisi (Many-to-Many)
     followed: so.WriteOnlyMapped['User'] = so.relationship(
@@ -54,6 +56,34 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+    def follow(self, user):
+        if not self.is_following(user):
+            self.followed.add(user)
+
+    def unfollow(self, user):
+        if self.is_following(user):
+            self.followed.remove(user)
+
+    def is_following(self, user):
+        query = self.followed.select().where(User.id == user.id)
+        return db.session.scalar(query) is not None
+
+    def has_liked_post(self, post):
+        query = self.likes.select().where(Like.post_id == post.id)
+        return db.session.scalar(query) is not None
+
+    def like(self, post):
+        if not self.has_liked_post(post):
+            like = Like(author=self, post=post)
+            db.session.add(like)
+
+    def unlike(self, post):
+        if self.has_liked_post(post):
+            query = self.likes.select().where(Like.post_id == post.id)
+            like = db.session.scalar(query)
+            if like:
+                db.session.delete(like)
+
     def followed_posts(self):
         # Takip edilenlerin gönderilerini getiren sorgu
         return db.select(Post).join(
@@ -67,11 +97,39 @@ class Post(db.Model):
     image_file: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1000))
     timestamp: so.Mapped[datetime] = so.mapped_column(index=True, default=lambda: datetime.now(timezone.utc))
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    comments_enabled: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=True)
+    is_global: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False, server_default=sa.text('0'))
 
     author: so.Mapped[User] = so.relationship(back_populates='posts')
+    comments: so.Mapped[list['Comment']] = so.relationship(back_populates='post', cascade='all, delete-orphan')
+    likes: so.Mapped[list['Like']] = so.relationship(back_populates='post', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Post {self.body}>'
+
+class Comment(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    body: so.Mapped[str] = so.mapped_column(sa.Text)
+    timestamp: so.Mapped[datetime] = so.mapped_column(index=True, default=lambda: datetime.now(timezone.utc))
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    post_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(Post.id), index=True)
+
+    author: so.Mapped[User] = so.relationship(back_populates='comments')
+    post: so.Mapped[Post] = so.relationship(back_populates='comments')
+
+    def __repr__(self):
+        return f'<Comment {self.body}>'
+
+class Like(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    post_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(Post.id), index=True)
+
+    author: so.Mapped[User] = so.relationship(back_populates='likes')
+    post: so.Mapped[Post] = so.relationship(back_populates='likes')
+
+    def __repr__(self):
+        return f'<Like user:{self.user_id} post:{self.post_id}>'
 
 @login.user_loader
 def load_user(id):
