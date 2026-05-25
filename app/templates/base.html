@@ -115,7 +115,7 @@
             } 
             // Yükleme formundaki önizleme resimlerine tıklandığında (Çoklu Galeri gibi davranır)
             else if (e.target.classList.contains('preview-img')) {
-                const previewContainer = e.target.closest('#imagePreviewContainer');
+                const previewContainer = e.target.closest('div[id^="imagePreviewContainer"]');
                 if (previewContainer) {
                     const images = previewContainer.querySelectorAll('.preview-img');
                     if (images.length > 0) {
