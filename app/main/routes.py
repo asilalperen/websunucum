@@ -4,7 +4,8 @@ from flask import render_template, flash, redirect, url_for, request, current_ap
 from app import db
 from app.main import bp
 from app.main.forms import EditProfileForm, PostForm, CommentForm
-from app.models import User, Post, Comment
+from app.models import User, Post, Comment, Notification
+import sqlalchemy as sa
 from flask_login import current_user, login_required
 from datetime import datetime, timezone
 
@@ -13,6 +14,13 @@ def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
+
+@bp.context_processor
+def inject_notifications():
+    if current_user.is_authenticated:
+        unread_count = db.session.scalar(sa.select(sa.func.count(Notification.id)).where(Notification.user_id == current_user.id, Notification.is_read == False))
+        return dict(unread_notifications_count=unread_count or 0)
+    return dict(unread_notifications_count=0)
 
 @bp.route('/', methods=['GET', 'POST'])
 @bp.route('/index', methods=['GET', 'POST'])
@@ -98,7 +106,11 @@ def index():
 @login_required
 def user(username):
     user = db.first_or_404(db.select(User).filter_by(username=username))
-    return render_template('user.html', user=user)
+    page = request.args.get('page', 1, type=int)
+    query = user.posts.select().order_by(Post.timestamp.desc())
+    posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
+    comment_form = CommentForm()
+    return render_template('user.html', user=user, posts_pagination=posts_pagination, comment_form=comment_form)
 
 @bp.route('/feed')
 @login_required
@@ -132,6 +144,9 @@ def add_comment(post_id):
     if form.validate_on_submit():
         comment = Comment(body=form.body.data, author=current_user, post=post)
         db.session.add(comment)
+        if post.author != current_user:
+            notif = Notification(user=post.author, message=f"{current_user.username} bir anına yorum yaptı.", link=url_for('main.user', username=current_user.username))
+            db.session.add(notif)
         db.session.commit()
         flash('Yorumun eklendi!')
     return redirect(url_for('main.index'))
@@ -158,7 +173,7 @@ def edit_profile():
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
         form.require_2fa.data = current_user.require_2fa
-    return render_template('index.html', title='Profili Düzenle', form=form)
+    return render_template('edit_profile.html', title='Profili Düzenle', form=form)
 
 @bp.route('/like/<int:post_id>', methods=['POST'])
 @login_required
@@ -171,6 +186,9 @@ def like(post_id):
         current_user.unlike(post)
     else:
         current_user.like(post)
+        if post.author != current_user:
+            notif = Notification(user=post.author, message=f"{current_user.username} bir anını beğendi.", link=url_for('main.user', username=current_user.username))
+            db.session.add(notif)
     db.session.commit()
     return redirect(url_for('main.index'))
 
@@ -185,6 +203,10 @@ def follow(username):
         flash('Kendinizi takip edemezsiniz!')
         return redirect(url_for('main.index'))
     current_user.follow(user)
+    
+    notif = Notification(user=user, message=f"{current_user.username} seni takip etmeye başladı.", link=url_for('main.user', username=current_user.username))
+    db.session.add(notif)
+    
     db.session.commit()
     flash(f'{username} artık takip ediliyor!')
     return redirect(url_for('main.index'))
@@ -218,3 +240,18 @@ def delete_comment(comment_id):
     db.session.commit()
     flash('Yorum silindi.')
     return redirect(url_for('main.index'))
+
+@bp.route('/notifications')
+@login_required
+def notifications():
+    query = current_user.notifications.select().order_by(Notification.timestamp.desc())
+    page = request.args.get('page', 1, type=int)
+    pagination = db.paginate(query, page=page, per_page=20, error_out=False)
+    
+    unread = db.session.scalars(current_user.notifications.select().filter_by(is_read=False)).all()
+    for notif in unread:
+        notif.is_read = True
+    if unread:
+        db.session.commit()
+        
+    return render_template('notifications.html', title='Bildirimler', notifications=pagination.items, pagination=pagination)

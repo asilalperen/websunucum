@@ -29,6 +29,7 @@ class User(UserMixin, db.Model):
     posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     comments: so.WriteOnlyMapped['Comment'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     likes: so.WriteOnlyMapped['Like'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
+    notifications: so.WriteOnlyMapped['Notification'] = so.relationship(back_populates='user', cascade='all, delete-orphan')
     
     # Takipçi ilişkisi (Many-to-Many)
     followed: so.WriteOnlyMapped['User'] = so.relationship(
@@ -132,6 +133,19 @@ class Like(db.Model):
 
     def __repr__(self):
         return f'<Like user:{self.user_id} post:{self.post_id}>'
+
+class Notification(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    message: so.Mapped[str] = so.mapped_column(sa.String(256))
+    link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
+    timestamp: so.Mapped[datetime] = so.mapped_column(index=True, default=lambda: datetime.now(timezone.utc))
+    is_read: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
+
+    user: so.Mapped[User] = so.relationship(back_populates='notifications')
+
+    def __repr__(self):
+        return f'<Notification {self.message}>'
 
 @login.user_loader
 def load_user(id):

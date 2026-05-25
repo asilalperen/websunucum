@@ -11,6 +11,7 @@
     --window-header: #E0E0E0;/* Pencere başlığı */
     --window-header-text: #333;
     --masonry-bg: rgba(255, 255, 255, 0.85);
+    --window-bg: rgba(255, 255, 255, 0.85);
 }
 
 .dark-mode {
@@ -23,6 +24,7 @@
     --window-header: rgba(0, 0, 0, 0.5);
     --window-header-text: #eee;
     --masonry-bg: rgba(20, 15, 10, 0.85);
+    --window-bg: rgba(30, 25, 20, 0.85);
 }
 
 body {
@@ -230,7 +232,7 @@ input[type="submit"]:active {
     max-height: 85vh;
     display: flex;
     flex-direction: column;
-    background: rgba(30, 25, 20, 0.85);
+    background: var(--window-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -304,7 +306,7 @@ input[type="submit"]:active {
 
 .window-content textarea {
     background-color: var(--input-bg);
-    color: white;
+    color: var(--text-main);
     border: 1px solid var(--accent-brown);
     border-radius: 5px;
     padding: 10px;

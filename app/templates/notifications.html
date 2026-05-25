@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2 style="color: var(--accent-orange); margin-bottom: 20px;">Bildirimleriniz</h2>
+
+    <div style="background: var(--box-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 1px solid var(--accent-brown);">
+        {% for notif in notifications %}
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                <div>
+                    <p style="margin: 0; color: var(--text-main); font-size: 15px;">
+                        {% if notif.link %}
+                            <a href="{{ notif.link }}" style="color: var(--text-main); text-decoration: none;">
+                                <strong>{{ notif.message }}</strong>
+                            </a>
+                        {% else %}
+                            <strong>{{ notif.message }}</strong>
+                        {% endif %}
+                    </p>
+                    <span style="font-size: 12px; color: #888;">{{ notif.timestamp.strftime('%d %B %Y - %H:%M') }}</span>
+                </div>
+            </div>
+        {% else %}
+            <p style="color: #666; text-align: center; margin: 20px 0;">Henüz hiç bildiriminiz yok.</p>
+        {% endfor %}
+
+        {% if pagination and pagination.pages > 1 %}
+        <div class="pagination" style="text-align: center; margin-top: 20px;">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('main.notifications', page=pagination.prev_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">&laquo; Önceki</a>
+            {% endif %}
+            <span style="color: var(--text-main); margin: 0 10px;">Sayfa {{ pagination.page }} / {{ pagination.pages }}</span>
+            {% if pagination.has_next %}
+                <a href="{{ url_for('main.notifications', page=pagination.next_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">Sonraki &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -16,6 +16,12 @@
                 <a href="{{ url_for('auth.register') }}">Kayıt Ol</a>
             {% else %}
                 <a href="{{ url_for('main.feed') }}">Akış</a>
+                <a href="{{ url_for('main.notifications') }}" style="position: relative;">
+                    Bildirimler
+                    {% if unread_notifications_count and unread_notifications_count > 0 %}
+                    <span style="position: absolute; top: -5px; right: -15px; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold;">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
                 <a href="{{ url_for('main.user', username=current_user.username) }}">Profil</a>
                 <a href="{{ url_for('auth.logout') }}">Çıkış Yap</a>
             {% endif %}
