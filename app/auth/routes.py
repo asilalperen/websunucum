@@ -1,10 +1,28 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, session
 from urllib.parse import urlsplit
 from flask_login import login_user, logout_user, current_user
-from app import db
+import random
+from flask_mail import Message
+from app import db, mail
 from app.auth import bp
-from app.auth.forms import LoginForm, RegistrationForm
+from app.auth.forms import LoginForm, RegistrationForm, VerifyEmailForm
 from app.models import User
+
+def send_verification_email(user):
+    code = str(random.randint(100000, 999999))
+    user.verification_code = code
+    db.session.commit()
+    
+    import os
+    if not os.environ.get('MAIL_USERNAME'):
+        print(f"\n==========\n[{user.username} için Doğrulama Kodu]: {code}\n==========\n")
+    else:
+        msg = Message('MementOS Doğrulama Kodu',
+                      sender=os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@mementos.com',
+                      recipients=[user.email])
+        msg.body = f'MementOS doğrulama kodunuz: {code}'
+        msg.html = render_template('email_template.html', code=code)
+        mail.send(msg)
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -16,6 +34,20 @@ def login():
         if user is None or not user.check_password(form.password.data):
             flash('Geçersiz kullanıcı adı veya şifre')
             return redirect(url_for('auth.login'))
+            
+        if not user.is_verified:
+            send_verification_email(user)
+            session['verify_user_id'] = user.id
+            flash('Hesabınız doğrulanmamış. Lütfen doğrulama kodunu giriniz.')
+            return redirect(url_for('auth.verify_email'))
+            
+        if user.require_2fa and not form.remember_me.data:
+            send_verification_email(user)
+            session['verify_user_id'] = user.id
+            session['remember_me'] = form.remember_me.data
+            flash('İki aşamalı doğrulama: Lütfen doğrulama kodunu giriniz.')
+            return redirect(url_for('auth.verify_email'))
+            
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or urlsplit(next_page).netloc != '':
@@ -34,10 +66,41 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = User(username=form.username.data, email=form.email.data, require_2fa=form.require_2fa.data)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('Tebrikler, başarıyla kayıt oldunuz!')
-        return redirect(url_for('auth.login'))
+        
+        send_verification_email(user)
+        session['verify_user_id'] = user.id
+        flash('Lütfen doğrulama kodunu giriniz.')
+        return redirect(url_for('auth.verify_email'))
     return render_template('register.html', title='Kayıt Ol', form=form)
+
+@bp.route('/verify_email', methods=['GET', 'POST'])
+def verify_email():
+    user_id = session.get('verify_user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+        
+    user = db.session.get(User, user_id)
+    if not user:
+        return redirect(url_for('auth.login'))
+        
+    form = VerifyEmailForm()
+    if form.validate_on_submit():
+        if form.code.data.strip() == user.verification_code:
+            user.is_verified = True
+            user.verification_code = None
+            db.session.commit()
+            
+            remember = session.pop('remember_me', False)
+            session.pop('verify_user_id', None)
+            
+            login_user(user, remember=remember)
+            flash('Doğrulama başarılı! Hoş geldiniz.')
+            return redirect(url_for('main.index'))
+        else:
+            flash('Hatalı doğrulama kodu. Lütfen tekrar deneyin.')
+            
+    return render_template('verify_email.html', title='E-posta Doğrulama', form=form, user=user)

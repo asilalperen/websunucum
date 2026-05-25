@@ -24,6 +24,7 @@ def index():
     if request.method == 'GET':
         edit_profile_form.username.data = current_user.username
         edit_profile_form.about_me.data = current_user.about_me
+        edit_profile_form.require_2fa.data = current_user.require_2fa
     
     if form.validate_on_submit():
         image_filename = None
@@ -149,13 +150,15 @@ def edit_profile():
             current_user.profile_pic = picture_filename
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
+        current_user.require_2fa = form.require_2fa.data
         db.session.commit()
         flash('Değişiklikleriniz kaydedildi.')
-        return redirect(url_for('main.edit_profile'))
+        return redirect(url_for('main.index'))
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
-    return render_template('edit_profile.html', title='Profili Düzenle', form=form)
+        form.require_2fa.data = current_user.require_2fa
+    return render_template('index.html', title='Profili Düzenle', form=form)
 
 @bp.route('/like/<int:post_id>', methods=['POST'])
 @login_required

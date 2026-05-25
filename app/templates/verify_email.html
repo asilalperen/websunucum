@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>E-posta Doğrulama</h1>
+    <p style="color: #ccc; font-size: 14px;">E-postanıza (veya terminale) gönderilen 6 haneli kodu giriniz.</p>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.code.label }}<br>
+            {{ form.code(size=10, class="modern-comment-input", style="width: auto;") }}<br>
+            {% for error in form.code.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit(class="modern-comment-submit", style="width: auto;") }}</p>
+    </form>
+{% endblock %}

@@ -22,7 +22,9 @@ class User(UserMixin, db.Model):
     about_me: so.Mapped[Optional[str]] = so.mapped_column(sa.String(140))
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(default=lambda: datetime.now(timezone.utc))
     profile_pic: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
-    
+    is_verified: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False, server_default=sa.text('0'))
+    verification_code: so.Mapped[Optional[str]] = so.mapped_column(sa.String(10))
+    require_2fa: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False, server_default=sa.text('0'))
     # İlişkiler
     posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     comments: so.WriteOnlyMapped['Comment'] = so.relationship(back_populates='author', cascade='all, delete-orphan')

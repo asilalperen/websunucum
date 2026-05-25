@@ -15,7 +15,12 @@ class RegistrationForm(FlaskForm):
     email = StringField('E-posta', validators=[DataRequired(), Email()])
     password = PasswordField('Şifre', validators=[DataRequired()])
     password_again = PasswordField('Şifre Tekrar', validators=[DataRequired(), EqualTo('password', message='Şifreler eşleşmelidir.')])
+    require_2fa = BooleanField('Her yeni girişimde e-posta ile doğrula (2FA)')
     submit = SubmitField('Kayıt Ol')
+
+class VerifyEmailForm(FlaskForm):
+    code = StringField('Doğrulama Kodu', validators=[DataRequired()])
+    submit = SubmitField('Doğrula')
 
     def validate_username(self, username):
         user = db.session.scalar(db.select(User).filter_by(username=username.data))

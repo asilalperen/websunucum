@@ -7,6 +7,7 @@ class EditProfileForm(FlaskForm):
     username = StringField('Kullanıcı Adı', validators=[DataRequired()])
     about_me = TextAreaField('Hakkımda', validators=[Length(min=0, max=140)])
     profile_pic = FileField('Profil Fotoğrafı', validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
+    require_2fa = BooleanField('Her girişte e-posta ile doğrula (2FA)')
     submit = SubmitField('Kaydet')
 
 # BİZİM MEŞHUR ANI (TIMESTASH) FORMUMUZ

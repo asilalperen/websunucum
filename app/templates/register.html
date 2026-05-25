@@ -32,6 +32,9 @@
             <span style="color: red;">[{{ error }}]</span>
             {% endfor %}
         </p>
+        <p>
+            {{ form.require_2fa() }} {{ form.require_2fa.label }}
+        </p>
         <p>{{ form.submit() }}</p>
     </form>
 {% endblock %}
