@@ -127,8 +127,26 @@ def delete_post(post_id):
     if post is None or post.author != current_user:
         from flask import abort
         abort(403)
+    images_to_check = []
+    if post.image_file:
+        images_to_check = [img.strip() for img in post.image_file.split(',') if img.strip()]
+
     db.session.delete(post)
     db.session.commit()
+    
+    # Güvenli Fotoğraf Silme Mantığı
+    for img in images_to_check:
+        usage_count = db.session.scalar(
+            sa.select(sa.func.count(Post.id)).where(Post.image_file.like(f"%{img}%"))
+        )
+        if usage_count == 0:
+            img_path = os.path.join(current_app.root_path, 'static/memory_pics', img)
+            if os.path.exists(img_path):
+                try:
+                    os.remove(img_path)
+                except Exception as e:
+                    pass
+
     flash('Anı başarıyla silindi.')
     return redirect(url_for('main.index'))
 
