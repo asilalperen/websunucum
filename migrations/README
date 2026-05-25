@@ -1,1 +1,30 @@
 Single-database configuration for Flask.
+# MementOS - Web Tabanlı İşletim Sistemi ve Sosyal Ağ
+
+**Geliştirici:** Alperen Asil Kablan  
+**Öğrenci No:** 25380102045  
+**Üniversite:** Gazi Üniversitesi  
+**Bölüm:** Bilişim Güvenliği Teknolojisi  
+**Ders:** BLG106 - Web Sunucusu Programlama  
+
+---
+
+## 📌 Proje Özeti
+MementOS, standart web sitelerinden sıyrılarak kullanıcılara bir "Web İşletim Sistemi (Web OS)" deneyimi sunmayı hedefleyen yenilikçi bir platformdur. Proje kapsamında kullanıcılar, "Mementgram" uygulaması üzerinden global bir akışta anılarını paylaşabilir, yorumlaşabilir ve etkileşime girebilirler. Bölümümün (Bilişim Güvenliği) gereksinimlerine uygun olarak sisteme 2 Aşamalı Doğrulama (2FA) ve E-posta tabanlı OTP (One Time Password) entegre edilmiştir.
+
+## 🚀 Öne Çıkan Özellikler
+* **Gelişmiş Güvenlik (2FA & OTP):** Flask-Mail ve SMTP kullanılarak E-posta tabanlı doğrulama sistemi kuruldu. Hassas veriler `.env` dosyasıyla izole edildi.
+* **Mementgram Sosyal Ağı:** Modern kart tasarımı, beğeni (Like) ve takip (Follow) sistemi.
+* **Performanslı Veri Çekimi:** Tüm listeleme işlemleri Flask-SQLAlchemy Pagination (Sayfalama) yapısı ile optimize edildi.
+* **LAN Ortak Ağ Desteği:** Sistem sadece localhost'ta değil, aynı ağdaki cihazların erişebileceği (`host='0.0.0.0'`) şekilde yapılandırıldı.
+
+## 🛠️ Kurulum ve Çalıştırma
+
+1. Sanal Ortamı Aktifleştirin:
+   `.\venv\Scripts\activate` (Windows)
+2. Gerekli Paketleri Yükleyin:
+   `pip install -r requirements.txt`
+3. Veritabanını Başlatın:
+   `flask db upgrade`
+4. Sunucuyu Ayağa Kaldırın:
+   `python run.py`
