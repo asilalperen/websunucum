@@ -148,7 +148,7 @@ def delete_post(post_id):
                     pass
 
     flash('Anı başarıyla silindi.')
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/add_comment/<int:post_id>', methods=['POST'])
 @login_required
@@ -156,7 +156,7 @@ def add_comment(post_id):
     post = db.session.get(Post, post_id)
     if post is None or not post.comments_enabled:
         flash('Bu anı yorumlara kapalıdır veya bulunamadı.')
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
     
     form = CommentForm()
     if form.validate_on_submit():
@@ -167,7 +167,7 @@ def add_comment(post_id):
             db.session.add(notif)
         db.session.commit()
         flash('Yorumun eklendi!')
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
@@ -199,7 +199,7 @@ def like(post_id):
     post = db.session.get(Post, post_id)
     if post is None:
         flash('Anı bulunamadı.')
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
     if current_user.has_liked_post(post):
         current_user.unlike(post)
     else:
@@ -208,7 +208,7 @@ def like(post_id):
             notif = Notification(user=post.author, message=f"{current_user.username} bir anını beğendi.", link=url_for('main.user', username=current_user.username))
             db.session.add(notif)
     db.session.commit()
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/follow/<username>', methods=['POST'])
 @login_required
@@ -216,10 +216,10 @@ def follow(username):
     user = db.session.scalar(db.select(User).filter_by(username=username))
     if user is None:
         flash(f'Kullanıcı {username} bulunamadı.')
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
     if user == current_user:
         flash('Kendinizi takip edemezsiniz!')
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
     current_user.follow(user)
     
     notif = Notification(user=user, message=f"{current_user.username} seni takip etmeye başladı.", link=url_for('main.user', username=current_user.username))
@@ -227,7 +227,7 @@ def follow(username):
     
     db.session.commit()
     flash(f'{username} artık takip ediliyor!')
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/unfollow/<username>', methods=['POST'])
 @login_required
@@ -235,14 +235,14 @@ def unfollow(username):
     user = db.session.scalar(db.select(User).filter_by(username=username))
     if user is None:
         flash(f'Kullanıcı {username} bulunamadı.')
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
     if user == current_user:
         flash('Kendinizi takipten çıkamazsınız!')
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
     current_user.unfollow(user)
     db.session.commit()
     flash(f'{username} takipten çıkarıldı.')
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/delete_comment/<int:comment_id>', methods=['POST'])
 @login_required
@@ -250,14 +250,14 @@ def delete_comment(comment_id):
     comment = db.session.get(Comment, comment_id)
     if comment is None:
         flash('Yorum bulunamadı.')
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
     if comment.author != current_user and comment.post.author != current_user:
         from flask import abort
         abort(403)
     db.session.delete(comment)
     db.session.commit()
     flash('Yorum silindi.')
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/notifications')
 @login_required
