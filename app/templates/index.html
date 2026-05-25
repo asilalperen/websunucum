@@ -112,6 +112,19 @@
                         {% endif %}
                     {% endfor %}
                 </div>
+                
+                {% if posts_pagination and posts_pagination.pages > 1 %}
+                <div class="pagination" style="text-align: center; margin: 20px 0;">
+                    {% if posts_pagination.has_prev %}
+                        <a href="{{ url_for('main.index', page=posts_pagination.prev_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">&laquo; Önceki</a>
+                    {% endif %}
+                    <span style="color: white; margin: 0 10px;">Sayfa {{ posts_pagination.page }} / {{ posts_pagination.pages }}</span>
+                    {% if posts_pagination.has_next %}
+                        <a href="{{ url_for('main.index', page=posts_pagination.next_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">Sonraki &raquo;</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
             </div>
         </div>
     </div>
@@ -247,6 +260,18 @@
                 {% else %}
                     <p style="text-align: center; color: #666;">Henüz sistemde hiç anı paylaşılmamış.</p>
                 {% endfor %}
+                
+                {% if global_pagination and global_pagination.pages > 1 %}
+                <div class="pagination" style="text-align: center; margin: 20px 0;">
+                    {% if global_pagination.has_prev %}
+                        <a href="{{ url_for('main.index', page=global_pagination.prev_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">&laquo; Önceki</a>
+                    {% endif %}
+                    <span style="color: white; margin: 0 10px;">Sayfa {{ global_pagination.page }} / {{ global_pagination.pages }}</span>
+                    {% if global_pagination.has_next %}
+                        <a href="{{ url_for('main.index', page=global_pagination.next_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">Sonraki &raquo;</a>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
 
             <div id="discoverTab" class="tab-content" style="padding: 0 20px;">
@@ -275,6 +300,18 @@
                     {% else %}
                         <p style="text-align: center; color: #666;">Keşfedilecek yeni kullanıcı kalmadı!</p>
                     {% endfor %}
+                    
+                    {% if discover_pagination and discover_pagination.pages > 1 %}
+                    <div class="pagination" style="text-align: center; margin: 20px 0;">
+                        {% if discover_pagination.has_prev %}
+                            <a href="{{ url_for('main.index', page=discover_pagination.prev_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">&laquo; Önceki</a>
+                        {% endif %}
+                        <span style="color: white; margin: 0 10px;">Sayfa {{ discover_pagination.page }} / {{ discover_pagination.pages }}</span>
+                        {% if discover_pagination.has_next %}
+                            <a href="{{ url_for('main.index', page=discover_pagination.next_num) }}" style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">Sonraki &raquo;</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 {% else %}
                     <p style="text-align: center; color: #666;">Keşfet özelliğini kullanmak için giriş yapmalısın.</p>
                 {% endif %}

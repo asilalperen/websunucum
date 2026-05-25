@@ -79,13 +79,18 @@ def index():
                 on_this_day_posts.append(p)
 
     discover_users = []
+    discover_pagination = None
     if current_user.is_authenticated:
-        discover_users = db.session.scalars(db.select(User).filter(User.id != current_user.id).limit(50)).all()
+        query = db.select(User).filter(User.id != current_user.id)
+        discover_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
+        discover_users = discover_pagination.items
     
-    # Global akış için tüm anılar (Mementgram için - şimdilik son 50 tane yeterli)
-    all_global_posts = db.session.scalars(db.select(Post).filter_by(is_global=True).order_by(Post.timestamp.desc()).limit(50)).all()
+    # Global akış için tüm anılar (Mementgram için - sayfalamalı)
+    global_query = db.select(Post).filter_by(is_global=True).order_by(Post.timestamp.desc())
+    global_pagination = db.paginate(global_query, page=page, per_page=10, error_out=False)
+    all_global_posts = global_pagination.items
     
-    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts)
+    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts, global_pagination=global_pagination, discover_pagination=discover_pagination, posts_pagination=posts_pagination)
 
 
 @bp.route('/user/<username>')

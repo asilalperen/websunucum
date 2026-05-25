@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import ValidationError, DataRequired, Email
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from app.models import User
 from app import db
 
@@ -14,6 +14,7 @@ class RegistrationForm(FlaskForm):
     username = StringField('Kullanıcı Adı', validators=[DataRequired()])
     email = StringField('E-posta', validators=[DataRequired(), Email()])
     password = PasswordField('Şifre', validators=[DataRequired()])
+    password_again = PasswordField('Şifre Tekrar', validators=[DataRequired(), EqualTo('password', message='Şifreler eşleşmelidir.')])
     submit = SubmitField('Kayıt Ol')
 
     def validate_username(self, username):
