@@ -126,7 +126,8 @@ def feed():
     page = request.args.get('page', 1, type=int)
     query = current_user.followed_posts()
     posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
-    return render_template('feed.html', title='Akış', posts=posts_pagination.items)
+    comment_form = CommentForm()
+    return render_template('feed.html', title='Akış', posts=posts_pagination.items, comment_form=comment_form, posts_pagination=posts_pagination)
 
 @bp.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
