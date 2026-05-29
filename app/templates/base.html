@@ -8,7 +8,7 @@
 </head>
 <body>
     <nav class="navbar">
-        <a class="navbar-brand" href="{{ url_for('main.index') }}">MementOS</a>
+        <a class="navbar-brand" href="#" onclick="openTour(); return false;" title="Tanıtım Turunu Aç">MementOS</a>
         <div class="navbar-links">
             <a href="{{ url_for('main.index') }}">Ana Ekran</a>
             {% if current_user.is_anonymous %}
@@ -65,6 +65,25 @@
         }
         applyTheme(); // Sayfa yüklenirken hemen çalıştır (FOUC engellemek için)
 
+        function openTour() {
+            if (window.location.pathname === '/' || window.location.pathname === '/index') {
+                const modal = document.getElementById('welcomeModal');
+                if (modal) {
+                    // Ayarlar penceresi açıksa kapat
+                    const settingsWin = document.getElementById('settingsWindow');
+                    if(settingsWin) settingsWin.style.display = 'none';
+                    
+                    modal.style.display = 'flex';
+                    if (typeof changeSlide === 'function') {
+                        currentSlide = 0;
+                        changeSlide(0);
+                    }
+                }
+            } else {
+                window.location.href = "/index?tour=1";
+            }
+        }
+
         function applyCursor() {
             const cursor = localStorage.getItem('mementos_cursor') || 'default';
             document.body.className = document.body.className.replace(/\bcursor-\S+/g, '').trim();
@@ -79,12 +98,43 @@
         document.addEventListener('DOMContentLoaded', applyCursor);
 
         // Tarayıcı dosya seçici penceresi kapandığında (veya sekmeye dönüldüğünde)
-        // imlecin eski haline dönmesi bug'ını çözmek için sayfayı yeniden odaklamaya zorluyoruz.
-        window.addEventListener('focus', function() {
-            document.body.style.cursor = 'default';
+        // imlecin eski haline dönmesi bug'ını kesin çözmek için geçici bir stil ekleyip siliyoruz.
+        function forceCursorRedraw() {
+            if (document.getElementById('cursor-fixer')) return;
+            const style = document.createElement('style');
+            style.id = 'cursor-fixer';
+            style.innerHTML = '* { cursor: auto !important; }';
+            document.head.appendChild(style);
+            
+            // Tarayıcıya zorla yeniden çizdirme (reflow) yaptırıyoruz
+            void document.body.offsetHeight;
+            
             setTimeout(() => {
-                document.body.style.cursor = '';
-            }, 10);
+                const fixer = document.getElementById('cursor-fixer');
+                if(fixer) fixer.remove();
+            }, 50);
+        }
+
+        window.addEventListener('focus', forceCursorRedraw);
+
+        // Dosya seçici açıldığında takip et
+        document.body.addEventListener('click', function(e) {
+            if (e.target.tagName.toLowerCase() === 'input' && e.target.type === 'file') {
+                window._fileDialogJustClosed = true;
+            } else if (e.target.tagName.toLowerCase() === 'label' && e.target.htmlFor) {
+                const input = document.getElementById(e.target.htmlFor);
+                if (input && input.type === 'file') {
+                    window._fileDialogJustClosed = true;
+                }
+            }
+        });
+
+        // Dosya seçici kapandıktan sonraki İLK fare hareketinde imleci onar
+        document.addEventListener('mousemove', function() {
+            if (window._fileDialogJustClosed) {
+                window._fileDialogJustClosed = false;
+                forceCursorRedraw();
+            }
         });
 
         // Fotoğraf Görüntüleyici Mantığı (Lightbox ve Çoklu Galeri)
