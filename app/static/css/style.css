@@ -538,7 +538,71 @@ body.modal-open {
 }
 
 /* =========================================
-   MEMENTGRAM VE YORUM SİSTEMİ
+   FLASH MESAJLARI (Toast Bildirimler)
+   ========================================= */
+.flashes {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.flashes li {
+    background-color: var(--accent-orange);
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    
+    /* Animasyonlar */
+    animation: slideDownFadeIn 0.4s ease forwards, slideUpFadeOut 0.4s ease 3s forwards;
+    opacity: 0;
+}
+
+@keyframes slideDownFadeIn {
+    0% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideUpFadeOut {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-20px);
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* Auth Kutuları için mevcut mesaj stillerini ezelim */
+.auth-box .flashes {
+    position: static;
+    transform: none;
+    margin-bottom: 20px;
+}
+
+/* =========================================
+   MODERN YORUM YAZMA ALANI (Yeni)
    ========================================= */
 
 .mementgram-post {

@@ -50,7 +50,8 @@ def index():
                 if not name:
                     name = "image"
                 unique_filename = f"{name}_{uuid.uuid4().hex[:8]}{ext}"
-                picture_path = os.path.join(current_app.root_path, 'static/memory_pics', unique_filename)
+                picture_path = os.path.join(current_app.root_path, 'static', 'memory_pics', unique_filename)
+                os.makedirs(os.path.dirname(picture_path), exist_ok=True)
                 picture_file.save(picture_path)
                 image_filenames.append(unique_filename)
                 
@@ -203,7 +204,8 @@ def edit_profile():
             picture_file = form.profile_pic.data
             _, f_ext = os.path.splitext(picture_file.filename)
             picture_filename = current_user.username + f_ext
-            picture_path = os.path.join(current_app.root_path, 'static/profile_pics', picture_filename)
+            picture_path = os.path.join(current_app.root_path, 'static', 'profile_pics', picture_filename)
+            os.makedirs(os.path.dirname(picture_path), exist_ok=True)
             picture_file.save(picture_path)
             current_user.profile_pic = picture_filename
         current_user.username = form.username.data
