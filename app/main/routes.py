@@ -49,8 +49,9 @@ def index():
                 picture_file.save(picture_path)
                 image_filenames.append(unique_filename)
                 
-        if form.existing_images.data:
-            existing_imgs = form.existing_images.data.split(',')
+        existing_images_data = request.form.get('existing_images') or form.existing_images.data
+        if existing_images_data:
+            existing_imgs = existing_images_data.split(',')
             for img in existing_imgs:
                 if img.strip():
                     image_filenames.append(img.strip())
@@ -107,7 +108,7 @@ def index():
 def user(username):
     user = db.first_or_404(db.select(User).filter_by(username=username))
     page = request.args.get('page', 1, type=int)
-    query = user.posts.select().order_by(Post.timestamp.desc())
+    query = user.posts.select().filter_by(is_global=True).order_by(Post.timestamp.desc())
     posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
     comment_form = CommentForm()
     return render_template('user.html', user=user, posts_pagination=posts_pagination, comment_form=comment_form)
