@@ -341,13 +341,7 @@ input[type="submit"]:active {
    KİŞİSELLEŞTİRİLEBİLİR İMLEÇLER
    ========================================= */
 body.cursor-lol, body.cursor-lol * {
-    cursor: url('../cursors/lol.png'), auto !important;
-}
-body.cursor-minecraft, body.cursor-minecraft * {
-    cursor: url('../cursors/minecraft.png'), auto !important;
-}
-body.cursor-retro, body.cursor-retro * {
-    cursor: url('../cursors/retro.png'), auto !important;
+    cursor: url('../cursors/lol.png') 0 0, auto !important;
 }
 
 /* =========================================

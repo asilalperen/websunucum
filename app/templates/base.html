@@ -78,6 +78,15 @@
         }
         document.addEventListener('DOMContentLoaded', applyCursor);
 
+        // Tarayıcı dosya seçici penceresi kapandığında (veya sekmeye dönüldüğünde)
+        // imlecin eski haline dönmesi bug'ını çözmek için sayfayı yeniden odaklamaya zorluyoruz.
+        window.addEventListener('focus', function() {
+            document.body.style.cursor = 'default';
+            setTimeout(() => {
+                document.body.style.cursor = '';
+            }, 10);
+        });
+
         // Fotoğraf Görüntüleyici Mantığı (Lightbox ve Çoklu Galeri)
         let currentGalleryImages = [];
         let currentImageIndex = 0;
