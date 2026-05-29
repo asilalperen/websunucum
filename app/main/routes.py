@@ -1,10 +1,14 @@
 import os
 from werkzeug.utils import secure_filename
-from flask import render_template, flash, redirect, url_for, request, current_app
+from flask import render_template, flash, redirect, url_for, request, current_app, session
 from app import db
 from app.main import bp
-from app.main.forms import EditProfileForm, PostForm, CommentForm
+from app.main.forms import EditProfileForm, PostForm, CommentForm, VerifySecurityForm
 from app.models import User, Post, Comment, Notification
+import random
+import re
+from flask_mail import Message
+from app import mail
 import sqlalchemy as sa
 from flask_login import current_user, login_required
 from datetime import datetime, timezone
@@ -29,8 +33,9 @@ def index():
     form = PostForm()
     comment_form = CommentForm()
     edit_profile_form = EditProfileForm()
-    if request.method == 'GET':
+    if request.method == 'GET' and current_user.is_authenticated:
         edit_profile_form.username.data = current_user.username
+        edit_profile_form.email.data = current_user.email
         edit_profile_form.about_me.data = current_user.about_me
         edit_profile_form.require_2fa.data = current_user.require_2fa
     
@@ -178,6 +183,17 @@ def add_comment(post_id):
         flash('Yorumun eklendi!')
     return redirect(request.referrer or url_for('main.index'))
 
+def send_security_email(user, code):
+    import os
+    if not os.environ.get('MAIL_USERNAME'):
+        print(f"\n==========\n[{user.email} için Güvenlik Doğrulama Kodu]: {code}\n==========\n")
+    else:
+        msg = Message('MementOS Güvenlik Doğrulama Kodu',
+                      sender=os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@mementos.com',
+                      recipients=[user.email])
+        msg.html = render_template('email_security_code.html', code=code)
+        mail.send(msg)
+
 @bp.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
@@ -193,14 +209,59 @@ def edit_profile():
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
         current_user.require_2fa = form.require_2fa.data
+        
+        email_changed = form.email.data != current_user.email
+        password_changed = bool(form.new_password.data)
+        
+        if email_changed or password_changed:
+            code = str(random.randint(100000, 999999))
+            session['security_code'] = code
+            session['pending_email'] = form.email.data if email_changed else None
+            session['pending_password'] = form.new_password.data if password_changed else None
+            
+            send_security_email(current_user, code)
+            db.session.commit() # Save username, about_me etc.
+            flash('Güvenlik ayarlarınızı değiştirmek için mevcut e-postanıza bir onay kodu gönderdik.')
+            return redirect(url_for('main.verify_security'))
+            
         db.session.commit()
         flash('Değişiklikleriniz kaydedildi.')
         return redirect(url_for('main.index'))
     elif request.method == 'GET':
         form.username.data = current_user.username
+        form.email.data = current_user.email
         form.about_me.data = current_user.about_me
         form.require_2fa.data = current_user.require_2fa
     return render_template('edit_profile.html', title='Profili Düzenle', form=form)
+
+@bp.route('/verify_security', methods=['GET', 'POST'])
+@login_required
+def verify_security():
+    if 'security_code' not in session:
+        return redirect(url_for('main.index'))
+        
+    form = VerifySecurityForm()
+    if form.validate_on_submit():
+        clean_code = re.sub(r'\D', '', form.code.data)
+        if clean_code == session['security_code']:
+            if session.get('pending_email'):
+                current_user.email = session['pending_email']
+            if session.get('pending_password'):
+                current_user.set_password(session['pending_password'])
+            
+            db.session.commit()
+            
+            # Temizlik
+            session.pop('security_code', None)
+            session.pop('pending_email', None)
+            session.pop('pending_password', None)
+            
+            flash('Güvenlik ayarlarınız başarıyla güncellendi!')
+            return redirect(url_for('main.index'))
+        else:
+            flash('Hatalı doğrulama kodu. Lütfen tekrar deneyin.')
+            
+    return render_template('verify_security.html', title='Güvenlik Doğrulaması', form=form)
 
 @bp.route('/like/<int:post_id>', methods=['POST'])
 @login_required

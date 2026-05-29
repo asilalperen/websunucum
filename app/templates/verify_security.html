@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3767/3767084.png" style="width: 60px;">
+            <h2 style="margin: 10px 0 0 0; color: var(--accent-orange);">Güvenlik Doğrulaması</h2>
+            <p style="color: var(--text-main); font-size: 14px;">Hesap güvenliğiniz (E-posta veya Şifre) değiştiriliyor. Lütfen mevcut e-posta adresinize gönderdiğimiz doğrulama kodunu girin.</p>
+        </div>
+
+        <form action="" method="post" novalidate>
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.code.label(style="color: var(--text-main); font-weight: bold;") }}
+                {{ form.code(class="auth-input", placeholder="123456") }}
+                {% for error in form.code.errors %}
+                <span class="error-msg" style="color: #ff4c4c; font-size: 12px; margin-top: 5px; display: block;">[{{ error }}]</span>
+                {% endfor %}
+            </div>
+            
+            <div style="margin-top: 25px;">
+                {{ form.submit(class="auth-btn") }}
+            </div>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ url_for('main.index') }}" style="color: var(--text-main); text-decoration: none; font-size: 14px;">İşlemi İptal Et</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

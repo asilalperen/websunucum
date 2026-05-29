@@ -462,8 +462,25 @@
                     {{ edit_profile_form.profile_pic(id="profile_pic", style="display:none;", accept="image/*") }}
                 </div>
                 <div style="margin-bottom: 20px;">
-                    {{ edit_profile_form.require_2fa() }} {{
-                    edit_profile_form.require_2fa.label(style="color:var(--text-main); font-size:14px;") }}
+                    {{ edit_profile_form.require_2fa() }} {{ edit_profile_form.require_2fa.label(style="color:var(--text-main); font-size:14px;") }}
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+                <h4 style="color: var(--accent-orange); margin-top: 0; margin-bottom: 15px;">Güvenlik Ayarları</h4>
+                
+                <div style="margin-bottom: 15px;">
+                    {{ edit_profile_form.email.label(style="display:block; margin-bottom:5px; color:var(--text-main); font-size:14px;") }}
+                    {{ edit_profile_form.email(class="modern-comment-input") }}
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    {{ edit_profile_form.new_password.label(style="display:block; margin-bottom:5px; color:var(--text-main); font-size:14px;") }}
+                    {{ edit_profile_form.new_password(class="modern-comment-input") }}
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    {{ edit_profile_form.new_password_again.label(style="display:block; margin-bottom:5px; color:var(--text-main); font-size:14px;") }}
+                    {{ edit_profile_form.new_password_again(class="modern-comment-input") }}
                 </div>
                 {{ edit_profile_form.submit(class="modern-comment-submit", style="width:100%; border-radius:8px;
                 margin-bottom: 20px;") }}

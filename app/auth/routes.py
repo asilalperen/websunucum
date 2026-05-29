@@ -36,8 +36,7 @@ def send_password_reset_email(user):
         msg = Message('MementOS Şifre Sıfırlama',
                       sender=os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@mementos.com',
                       recipients=[user.email])
-        msg.body = f'Şifrenizi sıfırlamak için şu linke tıklayın: {url_for("auth.reset_password", token=token, _external=True)}'
-        # İsteğe bağlı olarak msg.html eklenebilir
+        msg.html = render_template('email_reset_password.html', token=token)
         mail.send(msg)
 
 @bp.route('/login', methods=['GET', 'POST'])
