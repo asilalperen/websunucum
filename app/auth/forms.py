@@ -31,3 +31,12 @@ class VerifyEmailForm(FlaskForm):
         user = db.session.scalar(db.select(User).filter_by(email=email.data))
         if user is not None:
             raise ValidationError('Lütfen farklı bir e-posta adresi kullanın.')
+
+class ResetPasswordRequestForm(FlaskForm):
+    email = StringField('E-posta', validators=[DataRequired(), Email()])
+    submit = SubmitField('Şifre Sıfırlama Bağlantısı İste')
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Yeni Şifre', validators=[DataRequired()])
+    password_again = PasswordField('Yeni Şifre Tekrar', validators=[DataRequired(), EqualTo('password', message='Şifreler eşleşmelidir.')])
+    submit = SubmitField('Şifremi Sıfırla')

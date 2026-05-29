@@ -5,6 +5,8 @@ import sqlalchemy.orm as so
 from app import db, login
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app
 
 # İŞTE AJANIN ARADIĞI 3. MODEL (TAKİPÇİ ARA TABLOSU)
 followers = sa.Table(
@@ -50,6 +52,19 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def get_reset_password_token(self):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'reset_password': self.id})
+
+    @staticmethod
+    def verify_reset_password_token(token, expires_in=600):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            id = s.loads(token, max_age=expires_in)['reset_password']
+        except:
+            return None
+        return db.session.get(User, id)
 
     def avatar(self, size):
         if self.profile_pic:

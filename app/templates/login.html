@@ -25,6 +25,9 @@
             {{ form.remember_me() }} {{ form.remember_me.label }}
         </p>
         <p>{{ form.submit() }}</p>
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="{{ url_for('auth.reset_password_request') }}" style="color: var(--accent-orange); text-decoration: none; font-size: 14px; font-weight: bold;">Şifremi Unuttum?</a>
+        </div>
     </form>
     
     <div style="text-align: center; margin-top: 30px;">

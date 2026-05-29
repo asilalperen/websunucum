@@ -2,10 +2,11 @@ from flask import render_template, redirect, url_for, flash, request, session
 from urllib.parse import urlsplit
 from flask_login import login_user, logout_user, current_user
 import random
+import re
 from flask_mail import Message
 from app import db, mail
 from app.auth import bp
-from app.auth.forms import LoginForm, RegistrationForm, VerifyEmailForm
+from app.auth.forms import LoginForm, RegistrationForm, VerifyEmailForm, ResetPasswordRequestForm, ResetPasswordForm
 from app.models import User
 
 def send_verification_email(user):
@@ -22,6 +23,21 @@ def send_verification_email(user):
                       recipients=[user.email])
         msg.body = f'MementOS doğrulama kodunuz: {code}'
         msg.html = render_template('email_template.html', code=code)
+        mail.send(msg)
+
+def send_password_reset_email(user):
+    token = user.get_reset_password_token()
+    
+    import os
+    if not os.environ.get('MAIL_USERNAME'):
+        reset_url = url_for('auth.reset_password', token=token, _external=True)
+        print(f"\n==========\n[{user.email} için Şifre Sıfırlama Linki]: {reset_url}\n==========\n")
+    else:
+        msg = Message('MementOS Şifre Sıfırlama',
+                      sender=os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@mementos.com',
+                      recipients=[user.email])
+        msg.body = f'Şifrenizi sıfırlamak için şu linke tıklayın: {url_for("auth.reset_password", token=token, _external=True)}'
+        # İsteğe bağlı olarak msg.html eklenebilir
         mail.send(msg)
 
 @bp.route('/login', methods=['GET', 'POST'])
@@ -89,7 +105,9 @@ def verify_email():
         
     form = VerifyEmailForm()
     if form.validate_on_submit():
-        if form.code.data.strip() == user.verification_code:
+        # Yapıştırma hatalarını önlemek için sadece rakamları alıyoruz
+        clean_code = re.sub(r'\D', '', form.code.data)
+        if clean_code == user.verification_code:
             user.is_verified = True
             user.verification_code = None
             db.session.commit()
@@ -104,3 +122,32 @@ def verify_email():
             flash('Hatalı doğrulama kodu. Lütfen tekrar deneyin.')
             
     return render_template('verify_email.html', title='E-posta Doğrulama', form=form, user=user)
+
+@bp.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = db.session.scalar(db.select(User).filter_by(email=form.email.data))
+        if user:
+            send_password_reset_email(user)
+        flash('Şifre sıfırlama yönergeleri e-posta adresinize gönderildi. (Geliştirici Notu: Siyah terminal ekranını kontrol edin)')
+        return redirect(url_for('auth.login'))
+    return render_template('reset_password_request.html', title='Şifre Sıfırlama Talebi', form=form)
+
+@bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    user = User.verify_reset_password_token(token)
+    if not user:
+        flash('Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.')
+        return redirect(url_for('main.index'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Şifreniz başarıyla sıfırlandı. Lütfen giriş yapın.')
+        return redirect(url_for('auth.login'))
+    return render_template('reset_password.html', title='Şifre Sıfırla', form=form)
