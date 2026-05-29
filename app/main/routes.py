@@ -113,6 +113,13 @@ def user(username):
     comment_form = CommentForm()
     return render_template('user.html', user=user, posts_pagination=posts_pagination, comment_form=comment_form)
 
+@bp.route('/post/<int:post_id>')
+@login_required
+def post(post_id):
+    post = db.first_or_404(db.select(Post).filter_by(id=post_id))
+    comment_form = CommentForm()
+    return render_template('post.html', title='Anı Detayı', post=post, comment_form=comment_form)
+
 @bp.route('/feed')
 @login_required
 def feed():
@@ -164,7 +171,7 @@ def add_comment(post_id):
         comment = Comment(body=form.body.data, author=current_user, post=post)
         db.session.add(comment)
         if post.author != current_user:
-            notif = Notification(user=post.author, message=f"{current_user.username} bir anına yorum yaptı.", link=url_for('main.user', username=current_user.username))
+            notif = Notification(user=post.author, message=f"{current_user.username} bir anına yorum yaptı.", link=url_for('main.post', post_id=post.id))
             db.session.add(notif)
         db.session.commit()
         flash('Yorumun eklendi!')
@@ -206,7 +213,7 @@ def like(post_id):
     else:
         current_user.like(post)
         if post.author != current_user:
-            notif = Notification(user=post.author, message=f"{current_user.username} bir anını beğendi.", link=url_for('main.user', username=current_user.username))
+            notif = Notification(user=post.author, message=f"{current_user.username} bir anını beğendi.", link=url_for('main.post', post_id=post.id))
             db.session.add(notif)
     db.session.commit()
     return redirect(request.referrer or url_for('main.index'))
