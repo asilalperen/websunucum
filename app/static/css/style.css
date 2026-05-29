@@ -602,6 +602,31 @@ body.modal-open {
 }
 
 /* =========================================
+   AVATAR (PROFIL FOTOĞRAFI) STİLLERİ
+   ========================================= */
+.profile-avatar {
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid var(--accent-orange);
+    background-color: var(--box-bg);
+}
+
+.profile-avatar-large {
+    width: 128px;
+    height: 128px;
+}
+
+.profile-avatar-medium {
+    width: 50px;
+    height: 50px;
+}
+
+.profile-avatar-small {
+    width: 40px;
+    height: 40px;
+}
+
+/* =========================================
    MODERN YORUM YAZMA ALANI (Yeni)
    ========================================= */
 
