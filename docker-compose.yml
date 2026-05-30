@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DEBUG=False
+      - SQLALCHEMY_DATABASE_URI=postgresql://mementos_user:gizlisifre@db:5432/mementos_db
+    depends_on:
+      - db
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=mementos_user
+      - POSTGRES_PASSWORD=gizlisifre
+      - POSTGRES_DB=mementos_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
