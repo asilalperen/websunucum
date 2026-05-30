@@ -17,6 +17,9 @@ class VerifySecurityForm(FlaskForm):
     code = StringField('Doğrulama Kodu', validators=[DataRequired()])
     submit = SubmitField('Onayla ve Değiştir')
 
+class EmptyForm(FlaskForm):
+    submit = SubmitField('Gönder')
+
 # BİZİM MEŞHUR ANI (TIMESTASH) FORMUMUZ
 class PostForm(FlaskForm):
     post = TextAreaField('Anı', validators=[DataRequired()])

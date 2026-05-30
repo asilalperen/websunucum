@@ -3,7 +3,7 @@ from werkzeug.utils import secure_filename
 from flask import render_template, flash, redirect, url_for, request, current_app, session
 from app import db
 from app.main import bp
-from app.main.forms import EditProfileForm, PostForm, CommentForm, VerifySecurityForm
+from app.main.forms import EditProfileForm, PostForm, CommentForm, VerifySecurityForm, EmptyForm
 from app.models import User, Post, Comment, Notification
 import random
 import re
@@ -11,7 +11,7 @@ from flask_mail import Message
 from app import mail
 import sqlalchemy as sa
 from flask_login import current_user, login_required
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 @bp.before_request
 def before_request():
@@ -26,6 +26,18 @@ def inject_notifications():
         return dict(unread_notifications_count=unread_count or 0)
     return dict(unread_notifications_count=0)
 
+@bp.app_template_filter('local_time')
+def local_time_filter(dt, format='%d-%m-%Y %H:%M:%S'):
+    if dt is None:
+        return ""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    # Türkiye 2016'dan beri sabit UTC+3 kullanmaktadır.
+    # Windows sistemlerde ZoneInfo paketi varsayılan olarak bulunmadığı için
+    # timedelta ile doğrudan +3 saat ekleyerek basit ve kesin bir çözüm uyguluyoruz.
+    local_dt = dt + timedelta(hours=3)
+    return local_dt.strftime(format)
+
 @bp.route('/', methods=['GET', 'POST'])
 @bp.route('/index', methods=['GET', 'POST'])
 @login_required
@@ -33,6 +45,7 @@ def index():
     form = PostForm()
     comment_form = CommentForm()
     edit_profile_form = EditProfileForm()
+    empty_form = EmptyForm()
     if request.method == 'GET' and current_user.is_authenticated:
         edit_profile_form.username.data = current_user.username
         edit_profile_form.email.data = current_user.email
@@ -106,7 +119,7 @@ def index():
     global_pagination = db.paginate(global_query, page=page, per_page=10, error_out=False)
     all_global_posts = global_pagination.items
     
-    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts, global_pagination=global_pagination, discover_pagination=discover_pagination, posts_pagination=posts_pagination)
+    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, empty_form=empty_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts, global_pagination=global_pagination, discover_pagination=discover_pagination, posts_pagination=posts_pagination)
 
 
 @bp.route('/user/<username>')
@@ -117,14 +130,16 @@ def user(username):
     query = user.posts.select().filter_by(is_global=True).order_by(Post.timestamp.desc())
     posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
     comment_form = CommentForm()
-    return render_template('user.html', user=user, posts_pagination=posts_pagination, comment_form=comment_form)
+    empty_form = EmptyForm()
+    return render_template('user.html', user=user, posts_pagination=posts_pagination, comment_form=comment_form, empty_form=empty_form)
 
 @bp.route('/post/<int:post_id>')
 @login_required
 def post(post_id):
     post = db.first_or_404(db.select(Post).filter_by(id=post_id))
     comment_form = CommentForm()
-    return render_template('post.html', title='Anı Detayı', post=post, comment_form=comment_form)
+    empty_form = EmptyForm()
+    return render_template('post.html', title='Anı Detayı', post=post, comment_form=comment_form, empty_form=empty_form)
 
 @bp.route('/feed')
 @login_required
@@ -133,11 +148,17 @@ def feed():
     query = current_user.followed_posts()
     posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
     comment_form = CommentForm()
-    return render_template('feed.html', title='Akış', posts=posts_pagination.items, comment_form=comment_form, posts_pagination=posts_pagination)
+    empty_form = EmptyForm()
+    return render_template('feed.html', title='Akış', posts=posts_pagination.items, comment_form=comment_form, posts_pagination=posts_pagination, empty_form=empty_form)
 
 @bp.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
 def delete_post(post_id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem (CSRF doğrulaması başarısız).')
+        return redirect(request.referrer or url_for('main.index'))
+        
     post = db.session.get(Post, post_id)
     if post is None or post.author != current_user:
         from flask import abort
@@ -268,6 +289,11 @@ def verify_security():
 @bp.route('/like/<int:post_id>', methods=['POST'])
 @login_required
 def like(post_id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem (CSRF doğrulaması başarısız).')
+        return redirect(request.referrer or url_for('main.index'))
+        
     post = db.session.get(Post, post_id)
     if post is None:
         flash('Anı bulunamadı.')
@@ -285,6 +311,11 @@ def like(post_id):
 @bp.route('/follow/<username>', methods=['POST'])
 @login_required
 def follow(username):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem (CSRF doğrulaması başarısız).')
+        return redirect(request.referrer or url_for('main.index'))
+        
     user = db.session.scalar(db.select(User).filter_by(username=username))
     if user is None:
         flash(f'Kullanıcı {username} bulunamadı.')
@@ -304,6 +335,11 @@ def follow(username):
 @bp.route('/unfollow/<username>', methods=['POST'])
 @login_required
 def unfollow(username):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem (CSRF doğrulaması başarısız).')
+        return redirect(request.referrer or url_for('main.index'))
+        
     user = db.session.scalar(db.select(User).filter_by(username=username))
     if user is None:
         flash(f'Kullanıcı {username} bulunamadı.')
@@ -319,6 +355,11 @@ def unfollow(username):
 @bp.route('/delete_comment/<int:comment_id>', methods=['POST'])
 @login_required
 def delete_comment(comment_id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem (CSRF doğrulaması başarısız).')
+        return redirect(request.referrer or url_for('main.index'))
+        
     comment = db.session.get(Comment, comment_id)
     if comment is None:
         flash('Yorum bulunamadı.')
