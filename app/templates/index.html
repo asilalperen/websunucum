@@ -369,14 +369,14 @@
                 {% if global_pagination and global_pagination.pages > 1 %}
                 <div class="pagination" style="text-align: center; margin: 20px 0;">
                     {% if global_pagination.has_prev %}
-                    <a href="{{ url_for('main.index', page=global_pagination.prev_num) }}"
+                    <a href="{{ url_for('main.index', g_page=global_pagination.prev_num) }}"
                         style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">&laquo;
                         Önceki</a>
                     {% endif %}
                     <span style="color: white; margin: 0 10px;">Sayfa {{ global_pagination.page }} / {{
                         global_pagination.pages }}</span>
                     {% if global_pagination.has_next %}
-                    <a href="{{ url_for('main.index', page=global_pagination.next_num) }}"
+                    <a href="{{ url_for('main.index', g_page=global_pagination.next_num) }}"
                         style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">Sonraki
                         &raquo;</a>
                     {% endif %}
@@ -422,14 +422,14 @@
                 {% if discover_pagination and discover_pagination.pages > 1 %}
                 <div class="pagination" style="text-align: center; margin: 20px 0;">
                     {% if discover_pagination.has_prev %}
-                    <a href="{{ url_for('main.index', page=discover_pagination.prev_num) }}"
+                    <a href="{{ url_for('main.index', d_page=discover_pagination.prev_num) }}"
                         style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">&laquo;
                         Önceki</a>
                     {% endif %}
                     <span style="color: white; margin: 0 10px;">Sayfa {{ discover_pagination.page }} / {{
                         discover_pagination.pages }}</span>
                     {% if discover_pagination.has_next %}
-                    <a href="{{ url_for('main.index', page=discover_pagination.next_num) }}"
+                    <a href="{{ url_for('main.index', d_page=discover_pagination.next_num) }}"
                         style="color: var(--accent-orange); text-decoration: none; padding: 5px 10px; border: 1px solid var(--accent-orange); border-radius: 5px;">Sonraki
                         &raquo;</a>
                     {% endif %}
