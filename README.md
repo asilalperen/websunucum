@@ -2,6 +2,8 @@
 
 **MementOS**, sıradan bir web sitesi olmanın ötesinde, kullanıcılarına eksiksiz bir "Web Tabanlı İşletim Sistemi (Web OS)" ve izole edilmiş bir dijital anı/sosyal ağ deneyimi sunmak amacıyla geliştirilmiş yenilikçi bir web uygulamasıdır. Kullanıcıların tamamen kendilerine ait, kişiselleştirilebilir bir masaüstü ortamında dijital günlüklerini tutmalarına ve "Mementgram" isimli global akış (feed) üzerinden diğer kullanıcılarla etkileşime girmelerine olanak tanır.
 
+🎥 **[Proje Tanıtım Videosunu İzlemek İçin Tıklayın](https://drive.google.com/file/d/1Mx0fMb_cXXa4zyKCS8HD33ueasb6kCWI/view?usp=sharing)**
+
 ## 🚀 Projenin Vizyonu
 MementOS, salt bir sosyal medya platformu değildir. Amacımız; kullanıcıya masaüstü hissiyatı veren pencereli (window tabanlı) bir arayüz, kişiselleştirilebilir arka planlar, temalar ve imleçler (cursor) eşliğinde, kendilerini özel bir sistemin içindeymiş gibi hissettirmektir. Hem kişisel bir galeri (Anı Odası) hem de topluluğa açık bir sosyal platformu (Mementgram) aynı ekosistem içerisinde, kesintisiz bir kullanıcı deneyimi ile harmanlar.
 
@@ -34,6 +36,7 @@ Uygulamayı geliştirme ortamınızda veya sunucuda Docker ile çok hızlı bir 
 4. Tarayıcınızdan `http://localhost:5000` veya yerel ağ IP'niz (örn: `http://192.168.1.x:5000`) üzerinden MementOS'a erişin.
 
 ## 📚 Dokümantasyon
+- 🎥 **[Proje Tanıtım Videosu](https://drive.google.com/file/d/1Mx0fMb_cXXa4zyKCS8HD33ueasb6kCWI/view?usp=sharing)**
 - [Mimari ve Deneyim Raporu](docs/rapor.md)
 - [Yapay Zeka Etkileşim Günlüğü](docs/ai-gunlugu.md)
 
