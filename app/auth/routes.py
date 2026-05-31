@@ -16,7 +16,7 @@ def send_verification_email(user):
     
     import os
     if not os.environ.get('MAIL_USERNAME'):
-        print(f"\n==========\n[{user.username} için Doğrulama Kodu]: {code}\n==========\n")
+        print(f"\n==========\n[{user.username} için Doğrulama Kodu]: {code}\n==========\n", flush=True)
     else:
         msg = Message('MementOS Doğrulama Kodu',
                       sender=os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@mementos.com',
@@ -31,7 +31,7 @@ def send_password_reset_email(user):
     import os
     if not os.environ.get('MAIL_USERNAME'):
         reset_url = url_for('auth.reset_password', token=token, _external=True)
-        print(f"\n==========\n[{user.email} için Şifre Sıfırlama Linki]: {reset_url}\n==========\n")
+        print(f"\n==========\n[{user.email} için Şifre Sıfırlama Linki]: {reset_url}\n==========\n", flush=True)
     else:
         msg = Message('MementOS Şifre Sıfırlama',
                       sender=os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@mementos.com',

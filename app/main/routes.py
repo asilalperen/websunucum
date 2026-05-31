@@ -210,7 +210,7 @@ def add_comment(post_id):
 def send_security_email(user, code):
     import os
     if not os.environ.get('MAIL_USERNAME'):
-        print(f"\n==========\n[{user.email} için Güvenlik Doğrulama Kodu]: {code}\n==========\n")
+        print(f"\n==========\n[{user.email} için Güvenlik Doğrulama Kodu]: {code}\n==========\n", flush=True)
     else:
         msg = Message('MementOS Güvenlik Doğrulama Kodu',
                       sender=os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@mementos.com',

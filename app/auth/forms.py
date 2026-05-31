@@ -18,10 +18,6 @@ class RegistrationForm(FlaskForm):
     require_2fa = BooleanField('Her yeni girişimde e-posta ile doğrula (2FA)')
     submit = SubmitField('Kayıt Ol')
 
-class VerifyEmailForm(FlaskForm):
-    code = StringField('Doğrulama Kodu', validators=[DataRequired()])
-    submit = SubmitField('Doğrula')
-
     def validate_username(self, username):
         user = db.session.scalar(db.select(User).filter_by(username=username.data))
         if user is not None:
@@ -31,6 +27,9 @@ class VerifyEmailForm(FlaskForm):
         user = db.session.scalar(db.select(User).filter_by(email=email.data))
         if user is not None:
             raise ValidationError('Lütfen farklı bir e-posta adresi kullanın.')
+class VerifyEmailForm(FlaskForm):
+    code = StringField('Doğrulama Kodu', validators=[DataRequired()])
+    submit = SubmitField('Doğrula')
 
 class ResetPasswordRequestForm(FlaskForm):
     email = StringField('E-posta', validators=[DataRequired(), Email()])

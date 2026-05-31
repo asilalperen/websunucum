@@ -7,7 +7,7 @@ services:
       - "5000:5000"
     environment:
       - DEBUG=False
-      - SQLALCHEMY_DATABASE_URI=postgresql://mementos_user:gizlisifre@db:5432/mementos_db
+      - DATABASE_URL=postgresql://mementos_user:gizlisifre@db:5432/mementos_db
     volumes:
       - memory_pics:/app/app/static/memory_pics
       - profile_pics:/app/app/static/profile_pics
