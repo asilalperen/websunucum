@@ -90,20 +90,21 @@ def register():
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data, require_2fa=form.require_2fa.data)
         user.set_password(form.password.data)
+        # PythonAnywhere ücretsiz sürümünde e-posta gönderilemediği için
+        # tüm kullanıcıların e-postasını otomatik doğrulanmış sayıyoruz.
+        user.is_verified = True
         
         # Eğer sistemdeki İLK kullanıcıysa, onu otomatik olarak onaylanmış bir admin yap
         if User.query.count() == 0:
             user.is_admin = True
             user.is_approved = True
-            user.is_verified = True
             
         db.session.add(user)
         db.session.commit()
         
-        send_verification_email(user)
-        session['verify_user_id'] = user.id
-        flash('Lütfen doğrulama kodunu giriniz.')
-        return redirect(url_for('auth.verify_email'))
+        # E-posta atmıyoruz ve doğrulama sayfasına yönlendirmiyoruz
+        flash('Kayıt başarılı! Lütfen yönetici onayı bekleyiniz.')
+        return redirect(url_for('auth.login'))
     return render_template('register.html', title='Kayıt Ol', form=form)
 
 @bp.route('/verify_email', methods=['GET', 'POST'])
