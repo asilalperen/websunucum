@@ -397,3 +397,56 @@ def notifications():
         db.session.commit()
         
     return render_template('notifications.html', title='Bildirimler', notifications=pagination.items, pagination=pagination)
+
+from functools import wraps
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            from flask import abort
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+@bp.route('/admin')
+@login_required
+@admin_required
+def admin_panel():
+    unapproved_users = db.session.scalars(db.select(User).filter_by(is_approved=False).order_by(User.id.desc())).all()
+    approved_users = db.session.scalars(db.select(User).filter_by(is_approved=True).order_by(User.id.desc())).all()
+    form = EmptyForm()
+    return render_template('admin_panel.html', title='Admin Paneli', unapproved_users=unapproved_users, approved_users=approved_users, form=form)
+
+@bp.route('/admin/approve/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def approve_user(user_id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem.')
+        return redirect(url_for('main.admin_panel'))
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_approved = True
+        db.session.commit()
+        flash(f'{user.username} adlı kullanıcı onaylandı.')
+    return redirect(url_for('main.admin_panel'))
+
+@bp.route('/admin/delete/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem.')
+        return redirect(url_for('main.admin_panel'))
+    user = db.session.get(User, user_id)
+    if user:
+        if user == current_user:
+            flash('Kendinizi silemezsiniz!')
+        else:
+            db.session.delete(user)
+            db.session.commit()
+            flash(f'{user.username} adlı kullanıcı silindi.')
+    return redirect(url_for('main.admin_panel'))

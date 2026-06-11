@@ -23,6 +23,9 @@
                     {% endif %}
                 </a>
                 <a href="{{ url_for('main.user', username=current_user.username) }}">Profil</a>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('main.admin_panel') }}" style="color: #ff9800; font-weight: bold;">Admin Paneli</a>
+                {% endif %}
                 <a href="{{ url_for('auth.logout') }}">Çıkış Yap</a>
             {% endif %}
         </div>

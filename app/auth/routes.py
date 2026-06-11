@@ -50,6 +50,10 @@ def login():
             flash('Geçersiz kullanıcı adı veya şifre')
             return redirect(url_for('auth.login'))
             
+        if not user.is_approved:
+            flash('Hesabınız henüz yönetici tarafından onaylanmadı. Lütfen onay bekleyin.')
+            return redirect(url_for('auth.login'))
+            
         if not user.is_verified:
             send_verification_email(user)
             session['verify_user_id'] = user.id
@@ -114,6 +118,10 @@ def verify_email():
             remember = session.pop('remember_me', False)
             session.pop('verify_user_id', None)
             
+            if not user.is_approved:
+                flash('E-posta doğrulama başarılı! Ancak hesabınız henüz yönetici tarafından onaylanmadı. Lütfen onay bekleyin.')
+                return redirect(url_for('auth.login'))
+                
             login_user(user, remember=remember)
             flash('Doğrulama başarılı! Hoş geldiniz.')
             return redirect(url_for('main.index'))
