@@ -103,7 +103,7 @@
     </div>
 
     <!-- Fotoğraf Görüntüleyici Modalı -->
-    <div id="image-viewer-modal" style="display: none;">
+    <div id="image-viewer-modal" data-turbo-permanent style="display: none;">
         <span id="close-viewer">&times;</span>
         <span id="prev-viewer" class="nav-arrow" style="display: none;">&#10094;</span>
         <img id="viewer-image" src="" alt="Tam Boy Resim">
@@ -198,8 +198,8 @@
         });
 
         // Fotoğraf Görüntüleyici Mantığı (Lightbox ve Çoklu Galeri)
-        let currentGalleryImages = [];
-        let currentImageIndex = 0;
+        var currentGalleryImages = [];
+        var currentImageIndex = 0;
 
         function updateModalImage() {
             if (currentGalleryImages.length > 0) {
@@ -388,14 +388,86 @@
         }
     </script>
 
-    <div id="mementgram-toast" style="visibility: hidden; min-width: 250px; background-color: var(--accent-orange); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 9999; left: 50%; bottom: 80px; transform: translateX(-50%); font-size: 16px; font-weight: bold; opacity: 0; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <div id="mementgram-toast" data-turbo-permanent style="visibility: hidden; min-width: 250px; background-color: var(--accent-orange); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 9999; left: 50%; bottom: 80px; transform: translateX(-50%); font-size: 16px; font-weight: bold; opacity: 0; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
         Mesaj
     </div>
 
     {% if global_spotify_url %}
-    <div class="global-music-player" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-radius: 12px; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+    <div id="global-music-player-container" data-turbo-permanent class="global-music-player" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-radius: 12px; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
         <iframe style="border-radius:12px" src="{{ global_spotify_url }}" width="100%" height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
     </div>
     {% endif %}
+    <script>
+        // Özel SPA Yönlendirmesi (Müzik Kesilmesin Diye)
+        document.addEventListener("DOMContentLoaded", function() {
+            document.body.addEventListener("click", function(e) {
+                const link = e.target.closest("a");
+                if (!link) return;
+                
+                // Kendi sitemize mi ait?
+                if (link.origin !== window.location.origin) return;
+                
+                // Özel linkleri es geç
+                if (link.href.includes('/logout')) return;
+                if (link.getAttribute("onclick")) return;
+                if (link.target === "_blank") return;
+                if (link.href.includes('#')) return;
+
+                e.preventDefault();
+                const url = link.href;
+
+                fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, "text/html");
+
+                    const newContainer = doc.querySelector(".container");
+                    const currentContainer = document.querySelector(".container");
+                    
+                    if (newContainer && currentContainer) {
+                        // İçeriği değiştir
+                        currentContainer.innerHTML = newContainer.innerHTML;
+                        document.title = doc.title;
+                        window.history.pushState({ path: url }, '', url);
+
+                        // Navbar linklerini güncelle (bildirimler için vs)
+                        const currentNavbar = document.querySelector(".navbar-links");
+                        const newNavbar = doc.querySelector(".navbar-links");
+                        if (currentNavbar && newNavbar) {
+                            currentNavbar.innerHTML = newNavbar.innerHTML;
+                        }
+
+                        // Scriptleri tekrar çalıştır
+                        const scripts = currentContainer.querySelectorAll("script");
+                        scripts.forEach(oldScript => {
+                            const newScript = document.createElement("script");
+                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        });
+
+                        // Animasyonları tekrar çalıştır
+                        if (typeof applyCursor === "function") applyCursor();
+                        
+                        const cascadeItems = document.querySelectorAll('.post-card, .masonry-item');
+                        cascadeItems.forEach((item, index) => {
+                            item.classList.add('cascade-animate');
+                            item.style.animationDelay = `${index * 0.1}s`;
+                        });
+                    } else {
+                        window.location.href = url;
+                    }
+                })
+                .catch(err => {
+                    window.location.href = url;
+                });
+            });
+
+            window.addEventListener("popstate", function(e) {
+                window.location.reload();
+            });
+        });
+    </script>
 </body>
 </html>

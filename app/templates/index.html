@@ -811,7 +811,7 @@
     }
 
     // Sayfa yüklendiğinde arkaplanı uygula ve açık olan pencereyi geri getir
-    window.addEventListener('DOMContentLoaded', (event) => {
+    (function() {
         const savedWallpaper = localStorage.getItem('selectedWallpaper');
         if (savedWallpaper) {
             document.getElementById('desktopBg').style.backgroundImage = "url('" + savedWallpaper + "')";
@@ -832,10 +832,10 @@
             document.getElementById('welcomeModal').style.display = 'flex';
             localStorage.setItem('welcomeShown', 'true');
         }
-    });
+    })();
 
-    let currentSlide = 0;
-    const totalSlides = 4;
+    var currentSlide = 0;
+    var totalSlides = 4;
 
     function changeSlide(direction) {
         document.getElementById('slide-' + currentSlide).style.display = 'none';
@@ -934,7 +934,7 @@
     }
 
     // Galeriden mevcut fotoğraf seçimi
-    let selectedExistingImages = [];
+    var selectedExistingImages = [];
     function toggleGalleryImage(imgElement) {
         const filename = imgElement.getAttribute('data-filename');
         if (selectedExistingImages.includes(filename)) {
@@ -1004,21 +1004,24 @@
     }
 
     // Sayfa yüklenirken mevcut seçimi güncelle
-    document.addEventListener('DOMContentLoaded', function() {
+    (function() {
         if (document.getElementById('groupDropdownMenu')) {
             updateGroupSelectionUI();
         }
-    });
+    })();
 
     // Dropdown dışına tıklayınca kapatma
-    document.addEventListener('click', function(e) {
-        const dropdown = document.getElementById('groupDropdownMenu');
-        const btnText = document.getElementById('groupDropdownBtnText');
-        if (dropdown && dropdown.style.display === 'block' && !dropdown.contains(e.target) && e.target !== btnText) {
-            dropdown.style.display = 'none';
-            document.getElementById('groupDropdownArrow').style.transform = 'rotate(0deg)';
-        }
-    });
+    if (!window.groupDropdownClickAdded) {
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('groupDropdownMenu');
+            const btnText = document.getElementById('groupDropdownBtnText');
+            if (dropdown && dropdown.style.display === 'block' && !dropdown.contains(e.target) && e.target !== btnText) {
+                dropdown.style.display = 'none';
+                document.getElementById('groupDropdownArrow').style.transform = 'rotate(0deg)';
+            }
+        });
+        window.groupDropdownClickAdded = true;
+    }
     // Podyum Mantığı
     function togglePodiumDropdown(e) {
         if(e) e.stopPropagation();
@@ -1053,21 +1056,24 @@
         togglePodiumDropdown();
     }
 
-    document.addEventListener('click', function(e) {
-        const pMenu = document.getElementById('podiumDropdownMenu');
-        const pBtn = document.getElementById('podiumDropdownBtn');
-        if (pMenu && pMenu.style.display === 'block' && !pMenu.contains(e.target) && !pBtn.contains(e.target)) {
-            pMenu.style.display = 'none';
-            document.getElementById('podiumDropdownArrow').style.transform = 'rotate(0deg)';
-        }
-    });
+    if (!window.podiumClickAdded) {
+        document.addEventListener('click', function(e) {
+            const pMenu = document.getElementById('podiumDropdownMenu');
+            const pBtn = document.getElementById('podiumDropdownBtn');
+            if (pMenu && pMenu.style.display === 'block' && !pMenu.contains(e.target) && !pBtn.contains(e.target)) {
+                pMenu.style.display = 'none';
+                document.getElementById('podiumDropdownArrow').style.transform = 'rotate(0deg)';
+            }
+        });
+        window.podiumClickAdded = true;
+    }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    (function() {
         {% if group_leaderboards %}
         {% set first_group_id = group_leaderboards.keys()|first %}
         {% set first_group_name = group_leaderboards[first_group_id].name %}
         selectPodiumGroup('{{ first_group_id }}', '{{ first_group_name }}');
         {% endif %}
-    });
+    })();
 </script>
 {% endblock %}
