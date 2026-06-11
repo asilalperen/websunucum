@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField, BooleanField, HiddenField, PasswordField
+from wtforms import StringField, SubmitField, TextAreaField, BooleanField, HiddenField, PasswordField, SelectMultipleField, widgets
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 from flask_wtf.file import FileField, FileAllowed
 
@@ -26,8 +26,17 @@ class PostForm(FlaskForm):
     image = FileField('Fotoğraf', validators=[FileAllowed(['jpg', 'png', 'jpeg', 'gif'])])
     existing_images = HiddenField('Mevcut Fotoğraflar')
     comments_enabled = BooleanField('Yoruma İzin Ver', default=True)
+    groups = SelectMultipleField('Hangi Gruplarla Paylaşmak İstersin?', coerce=int, widget=widgets.ListWidget(prefix_label=False), option_widget=widgets.CheckboxInput())
     submit = SubmitField('Sisteme Kaydet')
 
 class CommentForm(FlaskForm):
     body = TextAreaField('Yorumun', validators=[DataRequired(), Length(min=1, max=140)])
     submit = SubmitField('Gönder')
+
+class GroupForm(FlaskForm):
+    name = StringField('Grup Adı', validators=[DataRequired()])
+    submit = SubmitField('Oluştur')
+
+class UserGroupForm(FlaskForm):
+    groups = SelectMultipleField('Kullanıcıyı Hangi Gruplara Ekleyelim?', coerce=int)
+    submit = SubmitField('Güncelle')

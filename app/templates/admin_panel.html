@@ -39,9 +39,10 @@
             <div class="user-card" style="border: 1px solid #4CAF50; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <strong>{{ u.username }}</strong> {% if u.is_admin %}<span style="background-color: #ff9800; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 5px;">Admin</span>{% endif %} <br>
-                    <small>{{ u.email }}</small>
+                    <small>{{ u.email }}</small> <br>
+                    <small style="color: #4CAF50;"><strong>Grupları:</strong> {% for g in u.groups %}{{ g.name }}{% if not loop.last %}, {% endif %}{% else %}Yok{% endfor %}</small>
                 </div>
-                <div>
+                <div style="display: flex; gap: 10px; align-items: center;">
                     {% if not u.is_admin %}
                     <form action="{{ url_for('main.delete_user', user_id=u.id) }}" method="post" onsubmit="return confirm('Bu onaylı kullanıcıyı silmek istediğinize emin misiniz?');">
                         {{ form.hidden_tag() }}
@@ -55,5 +56,82 @@
     {% else %}
         <p>Henüz kimse onaylanmamış.</p>
     {% endif %}
+
+    <h2 style="margin-top: 40px; color: #2196F3;">Grupları Yönet</h2>
+    
+    <div style="background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3>Yeni Grup Oluştur</h3>
+        <form action="{{ url_for('main.create_group') }}" method="post" style="display: flex; gap: 10px; align-items: stretch; margin-top: 10px;">
+            {{ group_form.hidden_tag() }}
+            <div style="flex: 1;">
+                {{ group_form.name(placeholder="Grup Adı (Örn: Basket Tayfa)", style="width: 100%; height: 100%; box-sizing: border-box; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #333; color: white !important; font-size: 14px;") }}
+            </div>
+            {{ group_form.submit(class="btn", style="background-color: #2196F3; cursor: pointer; width: auto; margin: 0; padding: 10px 25px;") }}
+        </form>
+    </div>
+
+    {% if groups %}
+        <div class="groups-list">
+            {% for g in groups %}
+            <div class="group-card" style="border: 1px solid #2196F3; padding: 10px 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="cursor: pointer; color: #2196F3; font-weight: bold; font-size: 16px;" onclick="document.getElementById('groupModal-{{ g.id }}').style.display='flex'">
+                    {{ g.name }} <span style="font-size: 12px; color: #888; font-weight: normal;">({{ g.users|length }} Üye) ✏️ Düzenle</span>
+                </div>
+                <form action="{{ url_for('main.delete_group', group_id=g.id) }}" method="post" onsubmit="return confirm('Bu grubu silmek istediğinize emin misiniz? (Üyeler silinmez, sadece gruptan çıkarlar)');">
+                    {{ form.hidden_tag() }}
+                    <button type="submit" class="btn" style="background-color: #f44336; padding: 5px 10px; font-size: 12px;">Sil</button>
+                </form>
+            </div>
+            
+            <!-- Group Modal -->
+            <div id="groupModal-{{ g.id }}" class="os-window" style="display: none; width: 500px; z-index: 10000; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                <div class="window-header" style="background-color: #2196F3;">
+                    <span>👥 {{ g.name }} Grubu Üyeleri</span>
+                    <button class="close-btn" type="button" onclick="document.getElementById('groupModal-{{ g.id }}').style.display='none'">X</button>
+                </div>
+                <div class="window-content">
+                    <input type="text" placeholder="Kullanıcı Ara..." onkeyup="filterGroupUsers({{ g.id }}, this.value)" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #444; background: #333; color: white;">
+                    <form action="{{ url_for('main.manage_group_users', group_id=g.id) }}" method="post">
+                        {{ form.hidden_tag() }}
+                        <div id="userList-{{ g.id }}" style="max-height: 300px; overflow-y: auto; background: #1e1e1e; padding: 10px; border-radius: 8px;">
+                            {% for u in approved_users %}
+                            <label class="user-row-{{ g.id }}" data-username="{{ u.username|lower }}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='#333'" onmouseout="this.style.background='transparent'">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="{{ u.avatar(30) }}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                                    <span>{{ u.username }}</span>
+                                </div>
+                                <input type="checkbox" name="user_ids" value="{{ u.id }}" {% if u in g.users %}checked{% endif %} style="width: 18px; height: 18px;">
+                            </label>
+                            {% endfor %}
+                            {% if not approved_users %}
+                                <p style="text-align: center; color: #888;">Henüz onaylı kullanıcı yok.</p>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn" style="width: 100%; margin-top: 15px; background-color: #4CAF50;">Değişiklikleri Kaydet</button>
+                    </form>
+                </div>
+            </div>
+
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Henüz hiç grup oluşturmadınız.</p>
+    {% endif %}
+
 </div>
+
+<script>
+function filterGroupUsers(groupId, query) {
+    query = query.toLowerCase();
+    const rows = document.querySelectorAll('.user-row-' + groupId);
+    rows.forEach(row => {
+        const username = row.getAttribute('data-username');
+        if (username.includes(query)) {
+            row.style.display = 'flex';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
 {% endblock %}

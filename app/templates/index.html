@@ -45,6 +45,14 @@
         <span class="icon-text">Hakkında</span>
     </div>
 
+    {% if current_user.is_authenticated %}
+    <div class="desktop-icon" onclick="openWindow('podiumWindow')"
+        style="position: absolute; top: 520px; left: 20px;">
+        <span style="font-size: 38px; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5)); margin-bottom: 5px; display: block; animation: bounce 2s infinite;">🏆</span>
+        <span class="icon-text">Sıralama</span>
+    </div>
+    {% endif %}
+
     <div class="os-window" id="memoryFolder" style="display: none; width: 500px;">
         <div class="window-header">
             <span>📝 Yeni Anı Ekle</span>
@@ -110,9 +118,9 @@
                             title="Fotoğrafları Görüntüle">{{ post.timestamp|local_time('%d %B %Y') }}</p>
                         <p style="margin: 5px 0;">{{ post.body }}</p>
                         {% if post.image_file %}
-                        <div class="memory-gallery">
+                        <div class="memory-gallery {% if post.image_file.split(',')|length == 1 %}single-image{% endif %}">
                             {% for img in post.image_file.split(',') %}
-                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img">
+                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" loading="lazy">
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -145,9 +153,9 @@
                         </div>
                         <p style="margin: 5px 0;">{{ post.body }}</p>
                         {% if post.image_file %}
-                        <div class="memory-gallery">
+                        <div class="memory-gallery {% if post.image_file.split(',')|length == 1 %}single-image{% endif %}">
                             {% for img in post.image_file.split(',') %}
-                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img">
+                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" loading="lazy">
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -207,6 +215,8 @@
                             düşünüyorsun?") }}
                         </div>
 
+
+
                         <!-- Gallery Picker -->
                         <div id="galleryPicker"
                             style="display: none; margin-bottom: 10px; border: 1px solid var(--accent-brown); border-radius: 8px; padding: 10px; max-height: 150px; overflow-y: auto;">
@@ -217,7 +227,7 @@
                                 {% for img in p.image_file.split(',') %}
                                 <img src="{{ url_for('static', filename='memory_pics/' + img) }}"
                                     class="gallery-select-img" data-filename="{{ img }}"
-                                    style="width: 60px; height: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent;"
+                                    style="width: 60px; height: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent;" loading="lazy"
                                     onclick="toggleGalleryImage(this)">
                                 {% endfor %}
                                 {% endif %}
@@ -252,6 +262,44 @@
                                     </svg>
                                     Galeriden Seç
                                 </span>
+
+                                <!-- NEW DROPDOWN -->
+                                {% if current_user.groups|length > 1 and form.groups.choices %}
+                                <div style="position: relative;">
+                                    <span style="cursor: pointer; color: var(--accent-orange); display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: bold;"
+                                        onclick="toggleGroupDropdown(event)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                        <span id="groupDropdownBtnText">Grubu Seçin</span>
+                                        <svg id="groupDropdownArrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="transition: transform 0.3s;">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </span>
+                                    
+                                    <div id="groupDropdownMenu" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 10px; background: var(--box-bg); border: 1px solid var(--accent-brown); border-radius: 8px; padding: 10px; width: 220px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100;">
+                                        
+                                        <div style="margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+                                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px; font-weight: bold; color: var(--accent-orange);">
+                                                <input type="checkbox" id="selectAllGroups" onclick="toggleAllGroups(this)" style="margin-right: 8px;">
+                                                Hepsi (Tümü)
+                                            </label>
+                                        </div>
+
+                                        <div style="display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto;">
+                                            {% for subfield in form.groups %}
+                                                <label class="group-dropdown-item" style="display: flex; align-items: center; cursor: pointer; font-size: 13px; transition: 0.2s; padding: 5px; border-radius: 5px;">
+                                                    {{ subfield(class="group-checkbox", style="margin-right: 8px;", onchange="updateGroupSelectionUI()") }} 
+                                                    <span>{{ loop.index }}. {{ subfield.label.text }}</span>
+                                                </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
                             {{ form.submit(style="background: var(--accent-orange); color: white; border: none; padding:
                             6px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; width: auto;") }}
@@ -266,7 +314,16 @@
                     <div class="post-header">
                         <div class="post-author">
                             <img src="{{ g_post.author.avatar(40) }}" class="profile-avatar profile-avatar-small" alt="Avatar">
-                            <span>{{ g_post.author.username }}</span>
+                            <div>
+                                <span style="display: block; font-weight: bold;">{{ g_post.author.username }}</span>
+                                {% if g_post.groups %}
+                                <div style="display: flex; gap: 5px; margin-top: 3px;">
+                                    {% for g in g_post.groups %}
+                                    <span style="font-size: 10px; background: var(--accent-orange); color: white; padding: 2px 6px; border-radius: 10px;">{{ g.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="font-size: 12px; color: #888;">{{ g_post.timestamp|local_time('%d %B %Y - %H:%M') }}</span>
@@ -292,14 +349,15 @@
                     </div>
 
                     {% if g_post.image_file %}
-                    {% for img in g_post.image_file.split(',') %}
-                    <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="post-image"
-                        alt="Post Image">
-                    {% endfor %}
+                    <div class="memory-gallery {% if g_post.image_file.split(',')|length == 1 %}single-image{% endif %}">
+                        {% for img in g_post.image_file.split(',') %}
+                        <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                        {% endfor %}
+                    </div>
                     {% endif %}
 
                     <div class="post-actions">
-                        <form action="{{ url_for('main.like', post_id=g_post.id) }}" method="post" style="margin:0;">
+                        <form action="{{ url_for('main.like', post_id=g_post.id) }}" method="post" class="like-form" style="margin:0;">
                             {{ empty_form.hidden_tag() }}
                             <button type="submit"
                                 class="action-btn {% if current_user.is_authenticated and current_user.has_liked_post(g_post) %}liked{% endif %}">
@@ -618,6 +676,93 @@
                 style="background: var(--accent-orange); border: none; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer;">İleri
                 &raquo;</button>
         </div>
+        </div>
+    </div>
+
+    <!-- Podyum (Liderlik Tablosu) Penceresi -->
+    <div class="os-window" id="podiumWindow" style="display: none; width: 650px; max-width: 95%;">
+        <div class="window-header">
+            <span>🏆 Liderlik Tablosu</span>
+            <button class="close-btn" onclick="closeWindow('podiumWindow')">X</button>
+        </div>
+        <div class="window-content" style="background: radial-gradient(circle at center, #2a2a2a 0%, var(--bg-dark) 100%); display: flex; flex-direction: column; align-items: center; padding: 30px 20px;">
+            {% if group_leaderboards %}
+                <!-- Grup Seçici -->
+                <div class="group-selector-podium" style="margin-bottom: 50px; position: relative; width: 250px; z-index: 50;">
+                    <div id="podiumDropdownBtn" onclick="togglePodiumDropdown(event)" style="background: rgba(0,0,0,0.3); border: 2px solid var(--accent-orange); padding: 12px 20px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; box-shadow: 0 4px 15px rgba(229,107,31,0.2);">
+                        <span id="podiumActiveGroupName" style="color: var(--accent-orange); font-weight: bold; font-size: 16px;">Grup Seçin</span>
+                        <svg id="podiumDropdownArrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="transition: 0.3s; color: var(--accent-orange);">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div id="podiumDropdownMenu" style="display: none; position: absolute; top: 110%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--accent-brown); border-radius: 12px; margin-top: 5px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); overflow: hidden;">
+                        {% for g_id, data in group_leaderboards.items() %}
+                        <div class="podium-dropdown-item" onclick="selectPodiumGroup('{{ g_id }}', '{{ data.name }}')" style="padding: 12px 20px; cursor: pointer; color: var(--text-main); transition: 0.2s; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: bold;">
+                            {{ data.name }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Podyum Alanları -->
+                <div id="podiumDisplaysContainer" style="width: 100%; height: 320px; position: relative;">
+                    {% for g_id, data in group_leaderboards.items() %}
+                    <div id="podium-group-{{ g_id }}" class="podium-display" style="display: none; width: 100%; height: 100%; align-items: flex-end; justify-content: center; gap: 20px;">
+                        
+                        {% set top_users = data.top_users %}
+                        
+                        <!-- 2. Sıra -->
+                        {% if top_users|length > 1 %}
+                        <div class="podium-stand-wrapper stand-2">
+                            <div class="podium-avatar-container silver-border">
+                                <img src="{{ top_users[1].avatar(80) }}" alt="Avatar" class="podium-avatar">
+                                <span class="podium-points">{{ top_users[1].points }} Puan</span>
+                            </div>
+                            <div class="podium-stand stand-silver">
+                                <span class="stand-number">2</span>
+                                <span class="stand-name">{{ top_users[1].username }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 1. Sıra -->
+                        {% if top_users|length > 0 %}
+                        <div class="podium-stand-wrapper stand-1">
+                            <div class="crown">👑</div>
+                            <div class="podium-avatar-container gold-border">
+                                <img src="{{ top_users[0].avatar(100) }}" alt="Avatar" class="podium-avatar">
+                                <span class="podium-points">{{ top_users[0].points }} Puan</span>
+                            </div>
+                            <div class="podium-stand stand-gold">
+                                <span class="stand-number">1</span>
+                                <span class="stand-name">{{ top_users[0].username }}</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p style="color: #888; text-align: center; width: 100%;">Bu grupta henüz kimse yok.</p>
+                        {% endif %}
+
+                        <!-- 3. Sıra -->
+                        {% if top_users|length > 2 %}
+                        <div class="podium-stand-wrapper stand-3">
+                            <div class="podium-avatar-container bronze-border">
+                                <img src="{{ top_users[2].avatar(80) }}" alt="Avatar" class="podium-avatar">
+                                <span class="podium-points">{{ top_users[2].points }} Puan</span>
+                            </div>
+                            <div class="podium-stand stand-bronze">
+                                <span class="stand-number">3</span>
+                                <span class="stand-name">{{ top_users[2].username }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color: #888; margin-top: 50px;">Henüz puan durumu hesaplanamadı.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 
@@ -786,5 +931,125 @@
         // id='existing_images' olarak generate edilen hidden inputu guncelle
         document.querySelectorAll('input[name="existing_images"]').forEach(el => el.value = selectedExistingImages.join(','));
     }
+
+    // Grup Seçimi Dropdown Mantığı
+    function toggleGroupDropdown(e) {
+        if(e) e.stopPropagation();
+        const menu = document.getElementById('groupDropdownMenu');
+        const arrow = document.getElementById('groupDropdownArrow');
+        if (menu.style.display === 'none' || menu.style.display === '') {
+            menu.style.display = 'block';
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            menu.style.display = 'none';
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function toggleAllGroups(masterCb) {
+        const checkboxes = document.querySelectorAll('.group-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = masterCb.checked;
+        });
+        updateGroupSelectionUI();
+    }
+
+    function updateGroupSelectionUI() {
+        const checkboxes = document.querySelectorAll('.group-checkbox');
+        let selectedCount = 0;
+        
+        checkboxes.forEach(cb => {
+            const label = cb.closest('.group-dropdown-item');
+            if (cb.checked) {
+                label.style.backgroundColor = 'rgba(229, 107, 31, 0.2)';
+                label.style.color = 'var(--accent-orange)';
+                label.style.fontWeight = 'bold';
+                selectedCount++;
+            } else {
+                label.style.backgroundColor = 'transparent';
+                label.style.color = 'inherit';
+                label.style.fontWeight = 'normal';
+            }
+        });
+
+        const btnText = document.getElementById('groupDropdownBtnText');
+        if (selectedCount === checkboxes.length && checkboxes.length > 0) {
+            btnText.innerText = "Tümü Seçildi";
+            document.getElementById('selectAllGroups').checked = true;
+        } else if (selectedCount > 0) {
+            btnText.innerText = selectedCount + " Grup Seçildi";
+            document.getElementById('selectAllGroups').checked = false;
+        } else {
+            btnText.innerText = "Grubu Seçin";
+            document.getElementById('selectAllGroups').checked = false;
+        }
+    }
+
+    // Sayfa yüklenirken mevcut seçimi güncelle
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('groupDropdownMenu')) {
+            updateGroupSelectionUI();
+        }
+    });
+
+    // Dropdown dışına tıklayınca kapatma
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('groupDropdownMenu');
+        const btnText = document.getElementById('groupDropdownBtnText');
+        if (dropdown && dropdown.style.display === 'block' && !dropdown.contains(e.target) && e.target !== btnText) {
+            dropdown.style.display = 'none';
+            document.getElementById('groupDropdownArrow').style.transform = 'rotate(0deg)';
+        }
+    });
+    // Podyum Mantığı
+    function togglePodiumDropdown(e) {
+        if(e) e.stopPropagation();
+        const menu = document.getElementById('podiumDropdownMenu');
+        const arrow = document.getElementById('podiumDropdownArrow');
+        if (menu.style.display === 'none' || menu.style.display === '') {
+            menu.style.display = 'block';
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            menu.style.display = 'none';
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function selectPodiumGroup(groupId, groupName) {
+        document.getElementById('podiumActiveGroupName').innerText = groupName;
+        // Tüm podyumları gizle
+        document.querySelectorAll('.podium-display').forEach(el => {
+            el.style.display = 'none';
+            // Yeniden animasyon için classı kaldır
+            el.classList.remove('podium-animate');
+        });
+        
+        // Seçileni göster
+        const selected = document.getElementById('podium-group-' + groupId);
+        if (selected) {
+            selected.style.display = 'flex';
+            // Animasyon için biraz gecikme ile class ekle
+            setTimeout(() => selected.classList.add('podium-animate'), 50);
+        }
+        
+        togglePodiumDropdown();
+    }
+
+    document.addEventListener('click', function(e) {
+        const pMenu = document.getElementById('podiumDropdownMenu');
+        const pBtn = document.getElementById('podiumDropdownBtn');
+        if (pMenu && pMenu.style.display === 'block' && !pMenu.contains(e.target) && !pBtn.contains(e.target)) {
+            pMenu.style.display = 'none';
+            document.getElementById('podiumDropdownArrow').style.transform = 'rotate(0deg)';
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        {% if group_leaderboards %}
+        {% set first_group_id = group_leaderboards.keys()|first %}
+        {% set first_group_name = group_leaderboards[first_group_id].name %}
+        selectPodiumGroup('{{ first_group_id }}', '{{ first_group_name }}');
+        {% endif %}
+    });
 </script>
 {% endblock %}

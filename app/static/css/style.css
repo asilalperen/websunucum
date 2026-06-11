@@ -198,12 +198,14 @@ input[type="submit"]:active {
     align-items: center;
     padding: 10px;
     border-radius: 5px;
-    transition: background 0.2s;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .desktop-icon:hover {
     background-color: rgba(255, 255, 255, 0.2);
     border: 1px dotted rgba(255, 255, 255, 0.5);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
 }
 
 .desktop-icon img {
@@ -211,6 +213,11 @@ input[type="submit"]:active {
     height: 50px;
     margin-bottom: 5px;
     filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.desktop-icon:hover img {
+    transform: scale(1.1) rotate(5deg);
 }
 
 .icon-text {
@@ -353,6 +360,7 @@ body.cursor-lol, body.cursor-lol * {
     padding-right: 5px;
 }
 
+
 .masonry-item {
     break-inside: avoid;
     margin-bottom: 20px;
@@ -393,26 +401,88 @@ body.cursor-lol, body.cursor-lol * {
     transform: scale(1.1);
 }
 
-/* Anı Kartı Çoklu Fotoğraf Galerisi */
+/* Anı Kartı Çoklu Fotoğraf Galerisi (Stack Effect) */
 .memory-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
-    margin-top: 12px;
+    position: relative;
+    height: 160px;
+    width: 100%;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
 }
 
 .memory-img {
-    width: 100%;
-    height: 120px;
+    position: absolute;
+    width: 140px;
+    height: 140px;
     object-fit: cover;
     border-radius: 10px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    border: 3px solid #fff;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), z-index 0.4s;
+    transform-origin: center bottom;
 }
 
-.memory-img:hover {
-    transform: scale(1.03);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+.dark-mode .memory-img {
+    border-color: #211C18;
+}
+
+/* Stack Positions */
+.memory-img:nth-child(1) {
+    z-index: 4;
+    transform: rotate(0deg);
+}
+
+.memory-img:nth-child(2) {
+    z-index: 3;
+    transform: rotate(6deg) translate(6px, 2px);
+}
+
+.memory-img:nth-child(3) {
+    z-index: 2;
+    transform: rotate(-5deg) translate(-6px, 4px);
+}
+
+.memory-img:nth-child(n+4) {
+    z-index: 1;
+    transform: rotate(9deg) translate(10px, 6px);
+}
+
+/* Hover Animasyonu (Dağılma) */
+.memory-gallery:hover .memory-img:nth-child(1) {
+    transform: translateY(-5px) rotate(0deg) scale(1.05);
+    z-index: 10;
+}
+.memory-gallery:hover .memory-img:nth-child(2) {
+    transform: translateX(45px) translateY(5px) rotate(15deg) scale(1.05);
+    z-index: 9;
+}
+.memory-gallery:hover .memory-img:nth-child(3) {
+    transform: translateX(-45px) translateY(5px) rotate(-15deg) scale(1.05);
+    z-index: 8;
+}
+.memory-gallery:hover .memory-img:nth-child(n+4) {
+    transform: translateX(60px) translateY(10px) rotate(25deg) scale(1.05);
+    z-index: 7;
+}
+
+/* Tek resim varsa efekti iptal et (Jinja'dan gelen .single-image sinifi ile) */
+.memory-gallery.single-image {
+    height: auto;
+    display: block;
+}
+.memory-gallery.single-image .memory-img {
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: contain;
+    transform: none !important;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
 .on-this-day-badge {
@@ -863,16 +933,58 @@ body.modal-open {
     height: 24px;
 }
 
+.action-btn.liked {
+    position: relative;
+}
+
+.action-btn.liked::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    box-shadow: 
+        -15px -15px 0 -5px #ff4c4c,
+        15px -15px 0 -5px #ff4c4c,
+        -15px 15px 0 -5px #ff4c4c,
+        15px 15px 0 -5px #ff4c4c,
+        0 -20px 0 -5px #ff4c4c,
+        0 20px 0 -5px #ff4c4c,
+        -20px 0 0 -5px #ff4c4c,
+        20px 0 0 -5px #ff4c4c;
+    animation: heartParticles 0.6s ease-out forwards;
+    pointer-events: none;
+}
+
 .action-btn.liked svg {
     fill: #ff4c4c;
     stroke: #ff4c4c;
-    animation: heartBurst 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: heartBurst 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartParticles {
+    0% { transform: scale(0.3); opacity: 1; }
+    80% { opacity: 0.8; }
+    100% { transform: scale(2.2); opacity: 0; }
 }
 
 @keyframes heartBurst {
     0% { transform: scale(1); }
-    50% { transform: scale(1.3); }
+    50% { transform: scale(1.35); }
     100% { transform: scale(1); }
+}
+
+/* Sayfa Giriş Süzülmesi (Cascade) */
+.cascade-animate {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: cascadeFadeUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes cascadeFadeUp {
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .modern-comment-form {
@@ -978,4 +1090,230 @@ body.modal-open {
 .unfollow-btn:hover {
     border-color: #ff4c4c;
     color: #ff4c4c;
+}
+
+/* Badges UI */
+.badge-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+    padding: 10px;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: rgba(0,0,0,0.15);
+    cursor: help;
+}
+
+.badge-item.unlocked {
+    border: 1px solid rgba(229, 107, 31, 0.3);
+}
+
+.badge-item.unlocked:hover {
+    transform: translateY(-5px) scale(1.05);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 15px rgba(229, 107, 31, 0.2);
+    border-color: var(--accent-orange);
+}
+
+.badge-icon-wrapper {
+    font-size: 32px;
+    margin-bottom: 5px;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+}
+
+.badge-item.locked {
+    opacity: 0.4;
+    filter: grayscale(100%);
+}
+
+.badge-item.locked:hover {
+    opacity: 0.6;
+}
+
+.badge-name {
+    font-size: 11px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--text-main);
+}
+
+/* Podium UI */
+.podium-stand-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 140px;
+}
+
+.podium-avatar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+    position: relative;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.podium-animate .podium-avatar-container {
+    animation: popUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.podium-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--card-bg);
+}
+
+.gold-border .podium-avatar { border: 4px solid #FFD700; box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); width: 100px; height: 100px; }
+.silver-border .podium-avatar { border: 4px solid #E0E0E0; box-shadow: 0 0 15px rgba(224, 224, 224, 0.4); width: 80px; height: 80px; }
+.bronze-border .podium-avatar { border: 4px solid #CD7F32; box-shadow: 0 0 15px rgba(205, 127, 50, 0.4); width: 80px; height: 80px; }
+
+.podium-points {
+    background: var(--card-bg);
+    color: var(--accent-orange);
+    border: 1px solid var(--accent-orange);
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: -15px;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.crown {
+    font-size: 45px;
+    position: absolute;
+    top: -50px;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
+    animation: float 2s ease-in-out infinite;
+    z-index: 20;
+}
+
+.podium-stand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 15px;
+    width: 100%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    box-shadow: inset 0 5px 15px rgba(255,255,255,0.3), 0 10px 20px rgba(0,0,0,0.5);
+    transform-origin: bottom;
+    transform: scaleY(0);
+}
+
+.podium-animate .podium-stand {
+    animation: growUp 0.5s ease-out forwards;
+}
+
+.stand-1 .podium-stand { height: 180px; background: linear-gradient(to bottom, #FFD700, #B8860B); z-index: 3; }
+.stand-2 .podium-stand { height: 130px; background: linear-gradient(to bottom, #E0E0E0, #A0A0A0); z-index: 2; }
+.stand-3 .podium-stand { height: 100px; background: linear-gradient(to bottom, #CD7F32, #8B4513); z-index: 1; }
+
+.stand-number {
+    font-size: 48px;
+    font-weight: 900;
+    color: rgba(0,0,0,0.3);
+    line-height: 1;
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.2);
+}
+
+.stand-name {
+    font-weight: bold;
+    color: white;
+    margin-top: 5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+    font-size: 14px;
+}
+
+@keyframes growUp {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+}
+
+@keyframes popUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.8); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Stagger animations */
+.podium-animate .stand-2 .podium-stand { animation-delay: 0.1s; }
+.podium-animate .stand-2 .podium-avatar-container { animation-delay: 0.3s; }
+
+.podium-animate .stand-1 .podium-stand { animation-delay: 0.3s; }
+.podium-animate .stand-1 .podium-avatar-container { animation-delay: 0.5s; }
+
+.podium-animate .stand-3 .podium-stand { animation-delay: 0.2s; }
+.podium-animate .stand-3 .podium-avatar-container { animation-delay: 0.4s; }
+
+.podium-dropdown-item:hover {
+    background-color: rgba(229, 107, 31, 0.2);
+}
+
+/* Steam Style Notification */
+.steam-notification {
+    position: fixed;
+    right: -400px; /* start hidden */
+    background: linear-gradient(to right, #1a1a2e, #16213e);
+    border: 1px solid #4a4e69;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    width: 320px;
+    cursor: pointer;
+    z-index: 9999;
+    animation: slideInSteam 7s ease-in-out forwards;
+}
+
+.steam-notification:hover {
+    background: linear-gradient(to right, #1f1f3a, #1a274a);
+}
+
+.steam-icon {
+    font-size: 40px;
+    margin-right: 15px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.steam-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.steam-title {
+    color: #a3a3a3;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+}
+
+.steam-name {
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.steam-points {
+    color: var(--accent-orange);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+@keyframes slideInSteam {
+    0% { right: -400px; }
+    10% { right: 20px; }
+    90% { right: 20px; opacity: 1; }
+    100% { right: -400px; opacity: 0; }
 }

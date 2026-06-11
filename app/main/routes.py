@@ -4,7 +4,8 @@ from flask import render_template, flash, redirect, url_for, request, current_ap
 from app import db
 from app.main import bp
 from app.main.forms import EditProfileForm, PostForm, CommentForm, VerifySecurityForm, EmptyForm
-from app.models import User, Post, Comment, Notification
+from app.models import User, Post, Comment, Notification, Group, Achievement
+from app.achievements import check_achievements
 import random
 import re
 from flask_mail import Message
@@ -43,6 +44,8 @@ def local_time_filter(dt, format='%d-%m-%Y %H:%M:%S'):
 @login_required
 def index():
     form = PostForm()
+    if current_user.is_authenticated:
+        form.groups.choices = [(g.id, g.name) for g in current_user.groups]
     comment_form = CommentForm()
     edit_profile_form = EditProfileForm()
     empty_form = EmptyForm()
@@ -87,7 +90,26 @@ def index():
             
         post = Post(body=form.post.data, image_file=image_filename, author=current_user, comments_enabled=comments_enabled, is_global=is_global)
         db.session.add(post)
+        
+        # Seçilen grupları posta ekle veya tek gruptaysa otomatik ekle
+        if current_user.groups:
+            if len(current_user.groups) > 1 and form.groups.data:
+                for group_id in form.groups.data:
+                    g = db.session.get(Group, group_id)
+                    if g and g in current_user.groups:
+                        post.groups.append(g)
+                # Eğer birden fazla gruba üye ama hiçbirini seçmediyse, formun validasyonuna takılmamış olabilir (boş bırakmış).
+                # Güvenlik olarak en azından bir atama yapalım (veya hepsine atalım).
+                if not post.groups:
+                    for g in current_user.groups:
+                        post.groups.append(g)
+            else:
+                # Sadece 1 grubundaysa (ya da hiçbiri seçilmediyse fallback)
+                for g in current_user.groups:
+                    post.groups.append(g)
+                    
         db.session.commit()
+        check_achievements(current_user)
         flash('Anı başarıyla arşive kaldırıldı!')
         return redirect(url_for('main.index'))
 
@@ -112,28 +134,78 @@ def index():
     discover_users = []
     discover_pagination = None
     if current_user.is_authenticated:
-        query = db.select(User).filter(User.id != current_user.id)
+        if current_user.is_admin:
+            query = db.select(User).filter(User.id != current_user.id)
+        else:
+            group_ids = [g.id for g in current_user.groups]
+            if group_ids:
+                query = db.select(User).join(User.groups).filter(
+                    User.id != current_user.id,
+                    Group.id.in_(group_ids)
+                ).distinct()
+            else:
+                query = db.select(User).filter(sa.sql.false())
         discover_pagination = db.paginate(query, page=d_page, per_page=10, error_out=False)
         discover_users = discover_pagination.items
     
     # Global akış için tüm anılar (Mementgram için - sayfalamalı)
-    global_query = db.select(Post).filter_by(is_global=True).order_by(Post.timestamp.desc())
+    if current_user.is_authenticated and not current_user.is_admin:
+        group_ids = [g.id for g in current_user.groups]
+        if group_ids:
+            global_query = db.select(Post).join(Post.groups).filter(
+                Post.is_global == True,
+                Group.id.in_(group_ids)
+            ).distinct().order_by(Post.timestamp.desc())
+        else:
+            global_query = db.select(Post).filter(sa.sql.false())
+    else:
+        global_query = db.select(Post).filter_by(is_global=True).order_by(Post.timestamp.desc())
+        
     global_pagination = db.paginate(global_query, page=g_page, per_page=10, error_out=False)
     all_global_posts = global_pagination.items
-    
-    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, empty_form=empty_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts, global_pagination=global_pagination, discover_pagination=discover_pagination, posts_pagination=posts_pagination)
+    # Podyum (Liderlik Tablosu) verisi hesaplama
+    group_leaderboards = {}
+    if current_user.is_authenticated:
+        groups_to_check = db.session.scalars(db.select(Group)).all() if current_user.is_admin else current_user.groups
+        for g in groups_to_check:
+            sorted_users = sorted(g.users, key=lambda x: x.points, reverse=True)[:3]
+            group_leaderboards[g.id] = {
+                'name': g.name,
+                'top_users': sorted_users
+            }
 
+    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, empty_form=empty_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts, global_pagination=global_pagination, discover_pagination=discover_pagination, posts_pagination=posts_pagination, group_leaderboards=group_leaderboards)
 
 @bp.route('/user/<username>')
 @login_required
 def user(username):
     user = db.first_or_404(db.select(User).filter_by(username=username))
+    
+    # İzolasyon Kontrolü: Admin değilse ve kendisi değilse ortak grup var mı diye bak
+    if not current_user.is_admin and user != current_user:
+        my_group_ids = set([g.id for g in current_user.groups])
+        their_group_ids = set([g.id for g in user.groups])
+        if not my_group_ids.intersection(their_group_ids):
+            from flask import abort
+            abort(404)
+            
     page = request.args.get('page', 1, type=int)
-    query = user.posts.select().filter_by(is_global=True).order_by(Post.timestamp.desc())
+    
+    if current_user.is_admin or user == current_user:
+        query = user.posts.select().filter_by(is_global=True).order_by(Post.timestamp.desc())
+    else:
+        # Sadece ortak gruplara atılan gönderileri görsün
+        my_group_ids = [g.id for g in current_user.groups]
+        query = user.posts.select().join(Post.groups).filter(
+            Post.is_global == True,
+            Group.id.in_(my_group_ids)
+        ).distinct().order_by(Post.timestamp.desc())
+        
     posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
     comment_form = CommentForm()
     empty_form = EmptyForm()
-    return render_template('user.html', user=user, posts_pagination=posts_pagination, comment_form=comment_form, empty_form=empty_form)
+    all_achievements = db.session.scalars(db.select(Achievement).order_by(Achievement.points)).all()
+    return render_template('user.html', user=user, posts_pagination=posts_pagination, comment_form=comment_form, empty_form=empty_form, all_achievements=all_achievements)
 
 @bp.route('/post/<int:post_id>')
 @login_required
@@ -204,6 +276,7 @@ def add_comment(post_id):
             notif = Notification(user=post.author, message=f"{current_user.username} bir anına yorum yaptı.", link=url_for('main.post', post_id=post.id))
             db.session.add(notif)
         db.session.commit()
+        check_achievements(current_user)
         flash('Yorumun eklendi!')
     return redirect(request.referrer or url_for('main.index'))
 
@@ -317,6 +390,11 @@ def like(post_id):
             notif = Notification(user=post.author, message=f"{current_user.username} bir anını beğendi.", link=url_for('main.post', post_id=post.id))
             db.session.add(notif)
     db.session.commit()
+    check_achievements(current_user)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.accept_json:
+        return {'liked': current_user.has_liked_post(post), 'like_count': len(post.likes)}
+        
     return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/follow/<username>', methods=['POST'])
@@ -415,8 +493,10 @@ def admin_required(f):
 def admin_panel():
     unapproved_users = db.session.scalars(db.select(User).filter_by(is_approved=False).order_by(User.id.desc())).all()
     approved_users = db.session.scalars(db.select(User).filter_by(is_approved=True).order_by(User.id.desc())).all()
+    groups = db.session.scalars(db.select(Group).order_by(Group.name)).all()
     form = EmptyForm()
-    return render_template('admin_panel.html', title='Admin Paneli', unapproved_users=unapproved_users, approved_users=approved_users, form=form)
+    group_form = GroupForm()
+    return render_template('admin_panel.html', title='Admin Paneli', unapproved_users=unapproved_users, approved_users=approved_users, groups=groups, form=form, group_form=group_form)
 
 @bp.route('/admin/approve/<int:user_id>', methods=['POST'])
 @login_required
@@ -449,4 +529,54 @@ def delete_user(user_id):
             db.session.delete(user)
             db.session.commit()
             flash(f'{user.username} adlı kullanıcı silindi.')
+    return redirect(url_for('main.admin_panel'))
+
+from app.main.forms import GroupForm, UserGroupForm
+
+@bp.route('/admin/create_group', methods=['POST'])
+@login_required
+@admin_required
+def create_group():
+    form = GroupForm()
+    if form.validate_on_submit():
+        if db.session.scalar(db.select(Group).filter_by(name=form.name.data)):
+            flash('Bu isimde bir grup zaten var.')
+        else:
+            g = Group(name=form.name.data)
+            db.session.add(g)
+            db.session.commit()
+            flash(f'{g.name} adlı grup oluşturuldu!')
+    return redirect(url_for('main.admin_panel'))
+
+@bp.route('/admin/delete_group/<int:group_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_group(group_id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        g = db.session.get(Group, group_id)
+        if g:
+            db.session.delete(g)
+            db.session.commit()
+            flash('Grup silindi.')
+    return redirect(url_for('main.admin_panel'))
+
+
+
+@bp.route('/admin/manage_group_users/<int:group_id>', methods=['POST'])
+@login_required
+@admin_required
+def manage_group_users(group_id):
+    g = db.session.get(Group, group_id)
+    if g:
+        user_ids = request.form.getlist('user_ids', type=int)
+        g.users.clear()
+        for uid in user_ids:
+            u = db.session.get(User, uid)
+            if u:
+                g.users.append(u)
+        db.session.commit()
+        for u in g.users:
+            check_achievements(u)
+        flash(f'{g.name} grubunun üyeleri güncellendi.')
     return redirect(url_for('main.admin_panel'))

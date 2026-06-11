@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - MementOS</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6">
 </head>
 <body>
     <nav class="navbar">
@@ -32,13 +32,60 @@
     </nav>
 
     <div class="container">
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <ul class="flashes">
-            {% for message in messages %}
-            <li>{{ message }}</li>
+            <ul class="flashes" style="list-style-type: none; padding: 0; margin: 0;">
+            {% for category, message in messages %}
+                {% if category == 'achievement' %}
+                    {% set parts = message.split('|') %}
+                    <div class="steam-notification" id="steamNotif-{{ loop.index }}" onclick="window.location.href='/user/{{ current_user.username }}'" style="bottom: {{ 20 + loop.index0 * 90 }}px;">
+                        <div class="steam-icon">{{ parts[0] }}</div>
+                        <div class="steam-content">
+                            <span class="steam-title">🏆 BAŞARIM KAZANILDI</span>
+                            <span class="steam-name">{{ parts[1] }}</span>
+                            <span class="steam-points">+{{ parts[3] }} Puan</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <li style="margin-bottom: 10px;">{{ message }}</li>
+                {% endif %}
             {% endfor %}
             </ul>
+            
+            <script>
+                // Web Audio API ile tatlı bir başarım sesi
+                function playAchievementSound() {
+                    try {
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const playTone = (freq, type, startTime, duration, vol) => {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = type;
+                            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
+                            gain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
+                            gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + startTime + 0.05);
+                            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start(audioCtx.currentTime + startTime);
+                            osc.stop(audioCtx.currentTime + startTime + duration);
+                        };
+                        // C5, E5, G5 (Major üçlüsü) - mutlu bir kilit açılma sesi
+                        playTone(523.25, 'sine', 0, 0.2, 0.2); // C5
+                        playTone(659.25, 'sine', 0.1, 0.2, 0.2); // E5
+                        playTone(783.99, 'triangle', 0.2, 0.4, 0.3); // G5
+                    } catch (e) { console.log("Audio not supported"); }
+                }
+
+                // Sesi çal (Tarayıcı etkileşim istiyorsa bazen engellenebilir, ama deneyeceğiz)
+                // Hemen değil, kutu kayarken çalması için 100ms gecikme
+                setTimeout(() => {
+                    const notifs = document.querySelectorAll('.steam-notification');
+                    if (notifs.length > 0) {
+                        playAchievementSound();
+                    }
+                }, 100);
+            </script>
         {% endif %}
         {% endwith %}
         
@@ -163,16 +210,16 @@
                 return;
             }
 
-            // Kartın geneline (.masonry-item) tıklandığında galeri oluştur
-            const masonryItem = e.target.closest('.masonry-item');
-            if (masonryItem) {
-                const images = masonryItem.querySelectorAll('.memory-img');
+            // Sadece resim galerisine (.memory-gallery) tıklandığında galeri oluştur
+            const galleryItem = e.target.closest('.memory-gallery');
+            if (galleryItem) {
+                const images = galleryItem.querySelectorAll('.memory-img');
                 if (images.length > 0) {
                     currentGalleryImages = Array.from(images).map(img => img.src);
                     if (e.target.classList.contains('memory-img')) {
                         currentImageIndex = currentGalleryImages.indexOf(e.target.src);
                     } else {
-                        currentImageIndex = 0; // Karta veya tarihe tıklandıysa ilki açılsın
+                        currentImageIndex = 0; // Galeri alanına tıklandıysa ilki açılsın
                     }
                     
                     const modal = document.getElementById('image-viewer-modal');
@@ -242,6 +289,51 @@
                 if (modal && modal.style.display === 'flex') {
                     closeViewer();
                 }
+            }
+        });
+
+        // Sayfa Giriş Süzülmesi (Cascade Fade-in)
+        document.addEventListener("DOMContentLoaded", () => {
+            const cascadeItems = document.querySelectorAll('.post-card, .masonry-item');
+            cascadeItems.forEach((item, index) => {
+                item.classList.add('cascade-animate');
+                item.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+
+        // AJAX Beğeni (Sayfa Yenilenmeden Kalp Atışı)
+        document.addEventListener('submit', function(e) {
+            if (e.target.matches('.like-form')) {
+                e.preventDefault(); // Sayfa yenilenmesini durdur
+                const form = e.target;
+                const btn = form.querySelector('.action-btn');
+                const countSpan = form.nextElementSibling; // Beğeni sayısının olduğu span formdan hemen sonra geliyor
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Kalp animasyonu ve renk değişimi
+                    if (data.liked) {
+                        btn.classList.add('liked');
+                    } else {
+                        btn.classList.remove('liked');
+                        // Tıklama ile çıkarıldığında animasyon sınıfını siliyoruz ki tekrar eklendiğinde çalışsın
+                        btn.style.animation = 'none';
+                        btn.offsetHeight; // Reflow tetikle
+                        btn.style.animation = null; 
+                    }
+                    // Beğeni sayısını güncelle
+                    if (countSpan) {
+                        countSpan.innerText = data.like_count + ' Beğeni';
+                    }
+                })
+                .catch(error => console.error('Beğeni işlemi başarısız:', error));
             }
         });
     </script>

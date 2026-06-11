@@ -16,6 +16,50 @@ followers = sa.Table(
     sa.Column('followed_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True)
 )
 
+user_group = sa.Table(
+    'user_group',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
+    sa.Column('group_id', sa.Integer, sa.ForeignKey('group.id'), primary_key=True)
+)
+
+post_group = sa.Table(
+    'post_group',
+    db.metadata,
+    sa.Column('post_id', sa.Integer, sa.ForeignKey('post.id'), primary_key=True),
+    sa.Column('group_id', sa.Integer, sa.ForeignKey('group.id'), primary_key=True)
+)
+
+user_achievement = sa.Table(
+    'user_achievement',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
+    sa.Column('achievement_id', sa.Integer, sa.ForeignKey('achievement.id'), primary_key=True),
+    sa.Column('date_earned', sa.DateTime, default=lambda: datetime.now(timezone.utc))
+)
+
+class Achievement(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, index=True)
+    description: so.Mapped[str] = so.mapped_column(sa.String(256))
+    icon: so.Mapped[str] = so.mapped_column(sa.String(64)) # E.g., '🥇', '🏆', or a CSS class
+    points: so.Mapped[int] = so.mapped_column(default=0)
+    
+    users: so.Mapped[list['User']] = so.relationship(secondary=user_achievement, back_populates='achievements')
+    
+    def __repr__(self):
+        return f'<Achievement {self.name}>'
+
+class Group(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, index=True)
+    
+    users: so.Mapped[list['User']] = so.relationship(secondary=user_group, back_populates='groups')
+    posts: so.Mapped[list['Post']] = so.relationship(secondary=post_group, back_populates='groups')
+    
+    def __repr__(self):
+        return f'<Group {self.name}>'
+
 class User(UserMixin, db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True)
@@ -29,6 +73,8 @@ class User(UserMixin, db.Model):
     require_2fa: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False, server_default=sa.text('0'))
     is_admin: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False, server_default=sa.text('0'))
     is_approved: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False, server_default=sa.text('0'))
+    points: so.Mapped[int] = so.mapped_column(sa.Integer, default=0, server_default=sa.text('0'))
+    
     # İlişkiler
     posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     comments: so.WriteOnlyMapped['Comment'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
@@ -48,6 +94,9 @@ class User(UserMixin, db.Model):
         secondaryjoin=(followers.c.follower_id == id),
         back_populates='followed'
     )
+    
+    groups: so.Mapped[list['Group']] = so.relationship(secondary=user_group, back_populates='users')
+    achievements: so.Mapped[list['Achievement']] = so.relationship(secondary=user_achievement, back_populates='users')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -123,6 +172,8 @@ class Post(db.Model):
     author: so.Mapped[User] = so.relationship(back_populates='posts')
     comments: so.Mapped[list['Comment']] = so.relationship(back_populates='post', cascade='all, delete-orphan')
     likes: so.Mapped[list['Like']] = so.relationship(back_populates='post', cascade='all, delete-orphan')
+    
+    groups: so.Mapped[list['Group']] = so.relationship(secondary=post_group, back_populates='posts')
 
     def __repr__(self):
         return f'<Post {self.body}>'

@@ -30,7 +30,7 @@
             {% endif %}
             
             <div class="post-actions">
-                <form action="{{ url_for('main.like', post_id=post.id) }}" method="post" style="margin:0;">
+                <form action="{{ url_for('main.like', post_id=post.id) }}" method="post" class="like-form" style="margin:0;">
                     {{ empty_form.hidden_tag() }}
                     <button type="submit" class="action-btn {% if current_user.is_authenticated and current_user.has_liked_post(post) %}liked{% endif %}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

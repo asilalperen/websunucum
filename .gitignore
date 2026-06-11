@@ -2,3 +2,8 @@ venv/
 __pycache__/
 instance/
 .env
+app.db
+app/static/memory_pics/*
+app/static/profile_pics/*
+!app/static/memory_pics/.gitkeep
+!app/static/profile_pics/.gitkeep

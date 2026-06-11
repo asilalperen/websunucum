@@ -16,7 +16,36 @@
             </td>
         </tr>
     </table>
-    <h3 style="color: var(--accent-orange);">{{ user.username }}'in Anıları</h3>
+
+    <div style="margin: 25px 0; background: var(--card-bg); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="color: var(--accent-orange); margin: 0; font-family: 'Segoe UI', sans-serif;">Rozet Vitrini</h3>
+            <span style="background: rgba(229, 107, 31, 0.2); color: var(--accent-orange); padding: 5px 15px; border-radius: 20px; font-weight: bold;">
+                🏆 {{ user.points }} Toplam Puan
+            </span>
+        </div>
+        <div class="badge-container" style="display: flex; gap: 15px; flex-wrap: wrap;">
+            {% set user_badge_names = user.achievements|map(attribute='name')|list %}
+            {% for badge in all_achievements %}
+                {% if badge.name in user_badge_names %}
+                    <div class="badge-item unlocked" title="{{ badge.description }} (+{{ badge.points }} Puan)" onclick="openBadgeModal('{{ badge.icon }}', '{{ badge.name }}', '{{ badge.description|replace('\'', '\\\'') }}', '{{ badge.points }}', false)">
+                        <div class="badge-icon-wrapper">{{ badge.icon }}</div>
+                        <span class="badge-name">{{ badge.name }}</span>
+                    </div>
+                {% else %}
+                    {% if user == current_user %}
+                        {% set secret_desc = "Şşşt... Bu bir sır! Bu gizli rozeti nasıl elde edeceğini sana söyleyemem. Biraz daha uygulamayı kurcalaman gerekecek... 👀🕵️‍♂️" %}
+                        <div class="badge-item locked" title="Gizli Görev" onclick="openBadgeModal('🔒', 'Gizli Görev', '{{ secret_desc }}', '{{ badge.points }}', true)">
+                            <div class="badge-icon-wrapper">🔒</div>
+                            <span class="badge-name">????</span>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <h3 style="color: var(--accent-orange); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{{ user.username }}'in Anıları</h3>
     
     <div style="max-width: 650px; margin: 0 auto;">
     {% for g_post in posts_pagination.items %}
@@ -24,7 +53,16 @@
             <div class="post-header">
                 <div class="post-author">
                     <img src="{{ g_post.author.avatar(40) }}" class="profile-avatar profile-avatar-small" alt="Avatar">
-                    <span>{{ g_post.author.username }}</span>
+                    <div>
+                        <span style="display: block; font-weight: bold;">{{ g_post.author.username }}</span>
+                        {% if g_post.groups %}
+                        <div style="display: flex; gap: 5px; margin-top: 3px;">
+                            {% for g in g_post.groups %}
+                            <span style="font-size: 10px; background: var(--accent-orange); color: white; padding: 2px 6px; border-radius: 10px;">{{ g.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 12px; color: #888;">{{ g_post.timestamp|local_time('%d %B %Y - %H:%M') }}</span>
@@ -40,13 +78,15 @@
             </div>
             
             {% if g_post.image_file %}
-                {% for img in g_post.image_file.split(',') %}
-                    <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="post-image" alt="Post Image">
-                {% endfor %}
+                <div class="memory-gallery {% if g_post.image_file.split(',')|length == 1 %}single-image{% endif %}">
+                    {% for img in g_post.image_file.split(',') %}
+                        <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                    {% endfor %}
+                </div>
             {% endif %}
             
             <div class="post-actions">
-                <form action="{{ url_for('main.like', post_id=g_post.id) }}" method="post" style="margin:0;">
+                <form action="{{ url_for('main.like', post_id=g_post.id) }}" method="post" class="like-form" style="margin:0;">
                     {{ empty_form.hidden_tag() }}
                     <button type="submit" class="action-btn {% if current_user.is_authenticated and current_user.has_liked_post(g_post) %}liked{% endif %}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -120,5 +160,64 @@
                 commentsDiv.style.display = 'none';
             }
         }
+
+        // Badge Modal Logic
+        function openBadgeModal(icon, name, description, points, isLocked) {
+            const modal = document.getElementById('badgeInfoModal');
+            document.getElementById('modalBadgeIcon').innerText = icon;
+            document.getElementById('modalBadgeName').innerText = name;
+            document.getElementById('modalBadgeDesc').innerText = description;
+            
+            const pointsElem = document.getElementById('modalBadgePoints');
+            if (isLocked) {
+                pointsElem.innerText = "Bilinmiyor";
+                pointsElem.style.color = "#888";
+                pointsElem.style.borderColor = "#555";
+                pointsElem.style.backgroundColor = "transparent";
+            } else {
+                pointsElem.innerText = "+" + points + " Puan";
+                pointsElem.style.color = "var(--accent-orange)";
+                pointsElem.style.borderColor = "var(--accent-orange)";
+                pointsElem.style.backgroundColor = "rgba(229, 107, 31, 0.2)";
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeBadgeModal() {
+            document.getElementById('badgeInfoModal').style.display = 'none';
+        }
+
+        // Click outside to close
+        window.onclick = function(event) {
+            const modal = document.getElementById('badgeInfoModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
     </script>
+
+    <!-- Rozet Bilgi Modalı -->
+    <div id="badgeInfoModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div style="background: radial-gradient(circle at top, #3a3a3a 0%, var(--card-bg) 100%); width: 350px; border-radius: 20px; padding: 30px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); position: relative; display: flex; flex-direction: column; align-items: center; animation: popUpModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <button onclick="closeBadgeModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; font-weight: bold; transition: 0.3s;">&times;</button>
+            
+            <div id="modalBadgeIcon" style="font-size: 80px; margin-bottom: 10px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); animation: float 3s ease-in-out infinite;">🏆</div>
+            <h2 id="modalBadgeName" style="color: white; margin: 0 0 15px 0; text-align: center; font-size: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Rozet Adı</h2>
+            
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; width: 100%; box-sizing: border-box; text-align: center; margin-bottom: 20px; border: 1px inset rgba(255,255,255,0.05);">
+                <p id="modalBadgeDesc" style="color: #ccc; margin: 0; font-size: 15px; line-height: 1.5;">Nasıl kazanıldığı burada yazacak.</p>
+            </div>
+            
+            <div id="modalBadgePoints" style="border: 2px solid var(--accent-orange); color: var(--accent-orange); background: rgba(229, 107, 31, 0.2); padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                +50 Puan
+            </div>
+        </div>
+    </div>
+    <style>
+        @keyframes popUpModal {
+            from { opacity: 0; transform: scale(0.7) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
 {% endblock %}
