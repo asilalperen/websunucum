@@ -23,7 +23,10 @@ def send_verification_email(user):
                       recipients=[user.email])
         msg.body = f'MementOS doğrulama kodunuz: {code}'
         msg.html = render_template('email_template.html', code=code)
-        mail.send(msg)
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"E-posta gönderim hatası: {e}", flush=True)
 
 def send_password_reset_email(user):
     token = user.get_reset_password_token()
@@ -92,6 +95,7 @@ def register():
         if User.query.count() == 0:
             user.is_admin = True
             user.is_approved = True
+            user.is_verified = True
             
         db.session.add(user)
         db.session.commit()
