@@ -87,6 +87,12 @@ def register():
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data, require_2fa=form.require_2fa.data)
         user.set_password(form.password.data)
+        
+        # Eğer sistemdeki İLK kullanıcıysa, onu otomatik olarak onaylanmış bir admin yap
+        if User.query.count() == 0:
+            user.is_admin = True
+            user.is_approved = True
+            
         db.session.add(user)
         db.session.commit()
         
