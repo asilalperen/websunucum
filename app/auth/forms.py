@@ -21,12 +21,12 @@ class RegistrationForm(FlaskForm):
     def validate_username(self, username):
         user = db.session.scalar(db.select(User).filter_by(username=username.data))
         if user is not None:
-            raise ValidationError('Lütfen farklı bir kullanıcı adı kullanın.')
+            raise ValidationError('Bu kullanıcı adı alınmış! Lütfen farklı bir kullanıcı adı seçin.')
 
     def validate_email(self, email):
         user = db.session.scalar(db.select(User).filter_by(email=email.data))
         if user is not None:
-            raise ValidationError('Lütfen farklı bir e-posta adresi kullanın.')
+            raise ValidationError('Bu e-posta adresi zaten kayıtlı! Lütfen farklı bir e-posta kullanın.')
 class VerifyEmailForm(FlaskForm):
     code = StringField('Doğrulama Kodu', validators=[DataRequired()])
     submit = SubmitField('Doğrula')

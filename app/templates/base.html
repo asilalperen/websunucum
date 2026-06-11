@@ -22,6 +22,7 @@
                     <span style="position: absolute; top: -5px; right: -15px; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold;">{{ unread_notifications_count }}</span>
                     {% endif %}
                 </a>
+                <a href="{{ url_for('main.saved_posts') }}">Kaydedilenler</a>
                 <a href="{{ url_for('main.user', username=current_user.username) }}">Profil</a>
                 {% if current_user.is_admin %}
                 <a href="{{ url_for('main.admin_panel') }}" style="color: #ff9800; font-weight: bold;">Admin Paneli</a>
@@ -36,21 +37,30 @@
         {% if messages %}
             <ul class="flashes" style="list-style-type: none; padding: 0; margin: 0;">
             {% for category, message in messages %}
-                {% if category == 'achievement' %}
-                    {% set parts = message.split('|') %}
-                    <div class="steam-notification" id="steamNotif-{{ loop.index }}" onclick="window.location.href='/user/{{ current_user.username }}'" style="bottom: {{ 20 + loop.index0 * 90 }}px;">
-                        <div class="steam-icon">{{ parts[0] }}</div>
-                        <div class="steam-content">
-                            <span class="steam-title">🏆 BAŞARIM KAZANILDI</span>
-                            <span class="steam-name">{{ parts[1] }}</span>
-                            <span class="steam-points">+{{ parts[3] }} Puan</span>
-                        </div>
-                    </div>
-                {% else %}
+                {% if category != 'achievement' %}
                     <li style="margin-bottom: 10px;">{{ message }}</li>
                 {% endif %}
             {% endfor %}
             </ul>
+
+            <!-- Steam Achievements Rendered Outside .flashes to avoid transform override -->
+            <div id="steam-notifications-container">
+            {% set steam_index = namespace(value=0) %}
+            {% for category, message in messages %}
+                {% if category == 'achievement' %}
+                    {% set parts = message.split('|') %}
+                    <div class="steam-notification" id="steamNotif-{{ steam_index.value }}" onclick="window.location.href='/user/{{ current_user.username }}'" style="bottom: {{ 110 + steam_index.value * 90 }}px;">
+                        <div class="steam-icon">{{ parts[0] }}</div>
+                        <div class="steam-content">
+                            <span class="steam-title">🎮 BAŞARIM KAZANILDI</span>
+                            <span class="steam-name">{{ parts[1] }}</span>
+                            <span class="steam-points">+{{ parts[3] }} Puan</span>
+                        </div>
+                    </div>
+                    {% set steam_index.value = steam_index.value + 1 %}
+                {% endif %}
+            {% endfor %}
+            </div>
             
             <script>
                 // Web Audio API ile tatlı bir başarım sesi
@@ -334,8 +344,58 @@
                     }
                 })
                 .catch(error => console.error('Beğeni işlemi başarısız:', error));
+            } else if (e.target.matches('.save-form')) {
+                e.preventDefault();
+                const form = e.target;
+                const btn = form.querySelector('.action-btn');
+                const svg = btn.querySelector('svg');
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.saved) {
+                        btn.style.color = 'var(--accent-orange)';
+                        svg.setAttribute('fill', 'currentColor');
+                        showToast("Gönderi başarıyla kaydedildi! 📌");
+                    } else {
+                        btn.style.color = 'inherit';
+                        svg.setAttribute('fill', 'none');
+                        showToast("Gönderi kaydedilenlerden çıkarıldı.");
+                    }
+                })
+                .catch(error => console.error('Kaydetme işlemi başarısız:', error));
             }
         });
+
+        function showToast(message) {
+            var x = document.getElementById("mementgram-toast");
+            if (!x) return;
+            x.innerText = message;
+            x.style.visibility = "visible";
+            x.style.opacity = "1";
+            x.style.bottom = "100px";
+            setTimeout(function(){ 
+                x.style.opacity = "0"; 
+                x.style.bottom = "80px";
+                setTimeout(function(){ x.style.visibility = "hidden"; }, 500);
+            }, 3000);
+        }
     </script>
+
+    <div id="mementgram-toast" style="visibility: hidden; min-width: 250px; background-color: var(--accent-orange); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 9999; left: 50%; bottom: 80px; transform: translateX(-50%); font-size: 16px; font-weight: bold; opacity: 0; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        Mesaj
+    </div>
+
+    {% if global_spotify_url %}
+    <div class="global-music-player" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-radius: 12px; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+        <iframe style="border-radius:12px" src="{{ global_spotify_url }}" width="100%" height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>
+    {% endif %}
 </body>
 </html>

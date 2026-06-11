@@ -38,6 +38,13 @@ user_achievement = sa.Table(
     sa.Column('date_earned', sa.DateTime, default=lambda: datetime.now(timezone.utc))
 )
 
+saved_posts = sa.Table(
+    'saved_posts',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
+    sa.Column('post_id', sa.Integer, sa.ForeignKey('post.id'), primary_key=True)
+)
+
 class Achievement(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, index=True)
@@ -79,7 +86,9 @@ class User(UserMixin, db.Model):
     posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     comments: so.WriteOnlyMapped['Comment'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     likes: so.WriteOnlyMapped['Like'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
+    comment_likes: so.WriteOnlyMapped['CommentLike'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     notifications: so.WriteOnlyMapped['Notification'] = so.relationship(back_populates='user', cascade='all, delete-orphan')
+    saved_posts: so.WriteOnlyMapped['Post'] = so.relationship(secondary=saved_posts, passive_deletes=True)
     
     # Takipçi ilişkisi (Many-to-Many)
     followed: so.WriteOnlyMapped['User'] = so.relationship(
@@ -133,6 +142,23 @@ class User(UserMixin, db.Model):
         if self.is_following(user):
             self.followed.remove(user)
 
+    def following_count(self):
+        query = sa.select(sa.func.count()).select_from(
+            self.followed.select().subquery())
+        return db.session.scalar(query)
+
+    def has_saved_post(self, post):
+        query = self.saved_posts.select().where(Post.id == post.id)
+        return db.session.scalar(query) is not None
+
+    def save_post(self, post):
+        if not self.has_saved_post(post):
+            self.saved_posts.add(post)
+
+    def unsave_post(self, post):
+        if self.has_saved_post(post):
+            self.saved_posts.remove(post)
+
     def is_following(self, user):
         query = self.followed.select().where(User.id == user.id)
         return db.session.scalar(query) is not None
@@ -149,6 +175,22 @@ class User(UserMixin, db.Model):
     def unlike(self, post):
         if self.has_liked_post(post):
             query = self.likes.select().where(Like.post_id == post.id)
+            like = db.session.scalar(query)
+            if like:
+                db.session.delete(like)
+
+    def has_liked_comment(self, comment):
+        query = self.comment_likes.select().where(CommentLike.comment_id == comment.id)
+        return db.session.scalar(query) is not None
+
+    def like_comment(self, comment):
+        if not self.has_liked_comment(comment):
+            like = CommentLike(author=self, comment=comment)
+            db.session.add(like)
+
+    def unlike_comment(self, comment):
+        if self.has_liked_comment(comment):
+            query = self.comment_likes.select().where(CommentLike.comment_id == comment.id)
             like = db.session.scalar(query)
             if like:
                 db.session.delete(like)
@@ -187,6 +229,7 @@ class Comment(db.Model):
 
     author: so.Mapped[User] = so.relationship(back_populates='comments')
     post: so.Mapped[Post] = so.relationship(back_populates='comments')
+    likes: so.Mapped[list['CommentLike']] = so.relationship(back_populates='comment', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Comment {self.body}>'
@@ -201,6 +244,17 @@ class Like(db.Model):
 
     def __repr__(self):
         return f'<Like user:{self.user_id} post:{self.post_id}>'
+
+class CommentLike(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    comment_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(Comment.id), index=True)
+
+    author: so.Mapped[User] = so.relationship(back_populates='comment_likes')
+    comment: so.Mapped[Comment] = so.relationship(back_populates='likes')
+
+    def __repr__(self):
+        return f'<CommentLike user:{self.user_id} comment:{self.comment_id}>'
 
 class Notification(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)

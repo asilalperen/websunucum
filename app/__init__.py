@@ -34,4 +34,18 @@ def create_app(config_class=Config):
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)
 
+    import re
+    from markupsafe import Markup
+
+    def mentions_filter(text):
+        if not text:
+            return text
+        def replace_match(match):
+            username = match.group(1)
+            return f'<a href="/user/{username}" style="color: var(--accent-orange); font-weight: bold; text-decoration: none;">@{username}</a>'
+        html = re.sub(r'@([a-zA-Z0-9_]+)', replace_match, text)
+        return Markup(html)
+
+    app.jinja_env.filters['mentions'] = mentions_filter
+
     return app

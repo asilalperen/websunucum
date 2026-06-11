@@ -234,7 +234,7 @@ def delete_post(post_id):
         return redirect(request.referrer or url_for('main.index'))
         
     post = db.session.get(Post, post_id)
-    if post is None or post.author != current_user:
+    if post is None or (post.author != current_user and not current_user.is_admin):
         from flask import abort
         abort(403)
     images_to_check = []
@@ -270,8 +270,20 @@ def add_comment(post_id):
     
     form = CommentForm()
     if form.validate_on_submit():
-        comment = Comment(body=form.body.data, author=current_user, post=post)
+        comment_body = form.body.data
+        comment = Comment(body=comment_body, author=current_user, post=post)
         db.session.add(comment)
+        
+        # Etiketleme (Mentions) kontrolü
+        import re
+        mentions = re.findall(r'@([a-zA-Z0-9_]+)', comment_body)
+        for username in set(mentions):
+            if username.lower() != current_user.username.lower():
+                user_to_notify = db.session.scalar(db.select(User).where(User.username.ilike(username)))
+                if user_to_notify:
+                    mention_notif = Notification(user=user_to_notify, message=f"{current_user.username} senden bir yorumda bahsetti.", link=url_for('main.post', post_id=post.id))
+                    db.session.add(mention_notif)
+
         if post.author != current_user:
             notif = Notification(user=post.author, message=f"{current_user.username} bir anına yorum yaptı.", link=url_for('main.post', post_id=post.id))
             db.session.add(notif)
@@ -397,6 +409,68 @@ def like(post_id):
         
     return redirect(request.referrer or url_for('main.index'))
 
+@bp.route('/save_post/<int:post_id>', methods=['POST'])
+@login_required
+def save_post(post_id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem (CSRF doğrulaması başarısız).')
+        return redirect(request.referrer or url_for('main.index'))
+        
+    post = db.session.get(Post, post_id)
+    if post is None:
+        flash('Anı bulunamadı.')
+        return redirect(request.referrer or url_for('main.index'))
+    if current_user.has_saved_post(post):
+        current_user.unsave_post(post)
+    else:
+        current_user.save_post(post)
+    db.session.commit()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.accept_json:
+        return {'saved': current_user.has_saved_post(post)}
+        
+    return redirect(request.referrer or url_for('main.index'))
+
+@bp.route('/saved_posts')
+@login_required
+def saved_posts():
+    empty_form = EmptyForm()
+    from app.main.forms import CommentForm
+    comment_form = CommentForm()
+    page = request.args.get('page', 1, type=int)
+    query = current_user.saved_posts.select().order_by(Post.timestamp.desc())
+    posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
+    posts = posts_pagination.items
+    return render_template('saved_posts.html', title='Kaydedilenler', posts=posts, empty_form=empty_form, comment_form=comment_form, pagination=posts_pagination)
+
+@bp.route('/like_comment/<int:comment_id>', methods=['POST'])
+@login_required
+def like_comment(comment_id):
+    form = EmptyForm()
+    if not form.validate_on_submit():
+        flash('Geçersiz işlem (CSRF doğrulaması başarısız).')
+        return redirect(request.referrer or url_for('main.index'))
+        
+    comment = db.session.get(Comment, comment_id)
+    if comment is None:
+        flash('Yorum bulunamadı.')
+        return redirect(request.referrer or url_for('main.index'))
+    if current_user.has_liked_comment(comment):
+        current_user.unlike_comment(comment)
+    else:
+        current_user.like_comment(comment)
+        if comment.author != current_user:
+            notif = Notification(user=comment.author, message=f"{current_user.username} bir yorumunu beğendi.", link=url_for('main.post', post_id=comment.post_id))
+            db.session.add(notif)
+    db.session.commit()
+    check_achievements(current_user)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.accept_json:
+        return {'liked': current_user.has_liked_comment(comment), 'like_count': len(comment.likes)}
+        
+    return redirect(request.referrer or url_for('main.index'))
+
 @bp.route('/follow/<username>', methods=['POST'])
 @login_required
 def follow(username):
@@ -453,7 +527,7 @@ def delete_comment(comment_id):
     if comment is None:
         flash('Yorum bulunamadı.')
         return redirect(request.referrer or url_for('main.index'))
-    if comment.author != current_user and comment.post.author != current_user:
+    if comment.author != current_user and comment.post.author != current_user and not current_user.is_admin:
         from flask import abort
         abort(403)
     db.session.delete(comment)
@@ -500,17 +574,37 @@ def admin_panel():
 
 @bp.route('/admin/approve/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
 def approve_user(user_id):
+    if not current_user.is_admin:
+        flash('Yetkiniz yok.')
+        return redirect(url_for('main.index'))
     form = EmptyForm()
     if not form.validate_on_submit():
         flash('Geçersiz işlem.')
         return redirect(url_for('main.admin_panel'))
     user = db.session.get(User, user_id)
-    if user:
-        user.is_approved = True
+    if user and user != current_user:
+        user.is_approved = not user.is_approved
         db.session.commit()
-        flash(f'{user.username} adlı kullanıcı onaylandı.')
+        if user.is_approved:
+            flash(f'{user.username} adlı kullanıcı onaylandı (Ban açıldı).')
+        else:
+            flash(f'{user.username} adlı kullanıcı YASAKLANDI (Banlandı).')
+    return redirect(url_for('main.admin_panel'))
+
+@bp.route('/admin/reset_password/<int:user_id>', methods=['POST'])
+@login_required
+def admin_reset_password(user_id):
+    if not current_user.is_admin:
+        flash('Yetkiniz yok.')
+        return redirect(url_for('main.index'))
+    form = EmptyForm()
+    if form.validate_on_submit():
+        user = db.session.get(User, user_id)
+        if user:
+            user.set_password('123456')
+            db.session.commit()
+            flash(f'{user.username} adlı kullanıcının şifresi başarıyla "123456" olarak sıfırlandı.')
     return redirect(url_for('main.admin_panel'))
 
 @bp.route('/admin/delete/<int:user_id>', methods=['POST'])
@@ -579,4 +673,58 @@ def manage_group_users(group_id):
         for u in g.users:
             check_achievements(u)
         flash(f'{g.name} grubunun üyeleri güncellendi.')
+    return redirect(url_for('main.admin_panel'))
+
+import os
+from flask import current_app
+
+@bp.context_processor
+def inject_global_radio():
+    radio_url = None
+    try:
+        radio_path = os.path.join(current_app.root_path, 'global_song.txt')
+        if os.path.exists(radio_path):
+            with open(radio_path, 'r', encoding='utf-8') as f:
+                radio_url = f.read().strip()
+    except Exception as e:
+        pass
+    return dict(global_spotify_url=radio_url)
+
+import re
+
+@bp.route('/admin/set_radio', methods=['POST'])
+@login_required
+def set_radio():
+    if not current_user.is_admin:
+        flash('Yetkiniz yok.')
+        return redirect(url_for('main.index'))
+    
+    spotify_link = request.form.get('spotify_link', '').strip()
+    radio_path = os.path.join(current_app.root_path, 'global_song.txt')
+    
+    try:
+        if not spotify_link:
+            if os.path.exists(radio_path):
+                os.remove(radio_path)
+            flash('Mementgram Radyosu kapatıldı.')
+        else:
+            if 'open.spotify.com' in spotify_link and '/embed/' not in spotify_link:
+                # Regex ile track/playlist türünü ve ID'sini ayıklıyoruz (intl-tr vb. atlamak için)
+                match = re.search(r'(track|playlist|album|artist|episode)/([a-zA-Z0-9]+)', spotify_link)
+                if match:
+                    embed_url = f"https://open.spotify.com/embed/{match.group(1)}/{match.group(2)}?utm_source=generator&theme=0"
+                    with open(radio_path, 'w', encoding='utf-8') as f:
+                        f.write(embed_url)
+                    flash('Mementgram Radyosu güncellendi!')
+                else:
+                    flash('Lütfen geçerli bir Spotify linki girin.')
+            elif '/embed/' in spotify_link:
+                with open(radio_path, 'w', encoding='utf-8') as f:
+                    f.write(spotify_link)
+                flash('Mementgram Radyosu güncellendi!')
+            else:
+                flash('Lütfen geçerli bir Spotify linki girin.')
+    except Exception as e:
+        flash('Radyo güncellenirken bir hata oluştu.')
+        
     return redirect(url_for('main.admin_panel'))

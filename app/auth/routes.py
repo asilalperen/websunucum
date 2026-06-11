@@ -54,7 +54,7 @@ def login():
             return redirect(url_for('auth.login'))
             
         if not user.is_approved:
-            flash('Hesabınız henüz yönetici tarafından onaylanmadı. Lütfen onay bekleyin.')
+            flash('Hesabınız yönetici tarafından onaylanmamış veya YASAKLANMIŞ.')
             return redirect(url_for('auth.login'))
             
         if not user.is_verified:
