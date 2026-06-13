@@ -80,7 +80,12 @@
             {% if g_post.image_file %}
                 <div class="memory-gallery {% if g_post.image_file.split(',')|length == 1 %}single-image{% endif %}">
                     {% for img in g_post.image_file.split(',') %}
-                        <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                        {% set ext = img.split('.')[-1]|lower %}
+                        {% if ext in ['mp4', 'webm'] %}
+                            <video src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" controls style="object-fit: cover; background: #000; max-height: 500px; width: 100%;"></video>
+                        {% else %}
+                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                        {% endif %}
                     {% endfor %}
                 </div>
             {% endif %}

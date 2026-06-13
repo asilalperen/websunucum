@@ -25,7 +25,12 @@
             
             {% if post.image_file %}
                 {% for img in post.image_file.split(',') %}
-                    <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="post-image" alt="Post Image">
+                    {% set ext = img.split('.')[-1]|lower %}
+                    {% if ext in ['mp4', 'webm'] %}
+                        <video src="{{ url_for('static', filename='memory_pics/' + img) }}" class="post-image" controls style="object-fit: contain; background: #000; width: 100%; max-height: 600px;"></video>
+                    {% else %}
+                        <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="post-image" alt="Post Image">
+                    {% endif %}
                 {% endfor %}
             {% endif %}
             

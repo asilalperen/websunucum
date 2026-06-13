@@ -7,6 +7,8 @@
         🌟 Akış (Sosyal Medya)
     </h2>
 
+
+
     {% for post in posts %}
         <div class="post-card" style="margin-bottom: 25px;">
             <div class="post-header">
@@ -32,7 +34,12 @@
             {% if post.image_file %}
                 <div class="memory-gallery {% if post.image_file.split(',')|length == 1 %}single-image{% endif %}">
                     {% for img in post.image_file.split(',') %}
-                        <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                        {% set ext = img.split('.')[-1]|lower %}
+                        {% if ext in ['mp4', 'webm'] %}
+                            <video src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" controls style="object-fit: cover; background: #000; max-height: 500px; width: 100%;"></video>
+                        {% else %}
+                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                        {% endif %}
                     {% endfor %}
                 </div>
             {% endif %}
@@ -129,13 +136,15 @@
 
 </div>
 
+
+
 <script>
     function toggleComments(postId) {
-        const commentsDiv = document.getElementById('comments-' + postId);
-        if (commentsDiv.style.display === 'none' || commentsDiv.style.display === '') {
-            commentsDiv.style.display = 'block';
+        var el = document.getElementById('comments-' + postId);
+        if (el.style.display === 'none' || el.style.display === '') {
+            el.style.display = 'block';
         } else {
-            commentsDiv.style.display = 'none';
+            el.style.display = 'none';
         }
     }
 </script>

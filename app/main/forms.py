@@ -23,7 +23,7 @@ class EmptyForm(FlaskForm):
 # BİZİM MEŞHUR ANI (TIMESTASH) FORMUMUZ
 class PostForm(FlaskForm):
     post = TextAreaField('Anı', validators=[DataRequired()])
-    image = FileField('Fotoğraf', validators=[FileAllowed(['jpg', 'png', 'jpeg', 'gif'])])
+    image = FileField('Medya (Fotoğraf veya Kısa Video)', validators=[FileAllowed(['jpg', 'png', 'jpeg', 'gif', 'mp4', 'webm'])])
     existing_images = HiddenField('Mevcut Fotoğraflar')
     comments_enabled = BooleanField('Yoruma İzin Ver', default=True)
     groups = SelectMultipleField('Hangi Gruplarla Paylaşmak İstersin?', coerce=int, widget=widgets.ListWidget(prefix_label=False), option_widget=widgets.CheckboxInput())
@@ -40,3 +40,8 @@ class GroupForm(FlaskForm):
 class UserGroupForm(FlaskForm):
     groups = SelectMultipleField('Kullanıcıyı Hangi Gruplara Ekleyelim?', coerce=int)
     submit = SubmitField('Güncelle')
+
+class StoryForm(FlaskForm):
+    media = FileField('Fotoğraf veya Kısa Video (MP4)', validators=[DataRequired(), FileAllowed(['jpg', 'png', 'jpeg', 'gif', 'mp4', 'webm'])])
+    groups = SelectMultipleField('Hangi Gruplarla Paylaşmak İstersin?', coerce=int, widget=widgets.ListWidget(prefix_label=False), option_widget=widgets.CheckboxInput())
+    submit = SubmitField('Hikayeyi Paylaş')

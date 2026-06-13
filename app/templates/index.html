@@ -120,7 +120,12 @@
                         {% if post.image_file %}
                         <div class="memory-gallery {% if post.image_file.split(',')|length == 1 %}single-image{% endif %}">
                             {% for img in post.image_file.split(',') %}
-                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" loading="lazy">
+                                {% set ext = img.split('.')[-1]|lower %}
+                                {% if ext in ['mp4', 'webm'] %}
+                                    <video src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" controls style="object-fit: cover; background: #000; max-height: 500px; width: 100%;"></video>
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" loading="lazy">
+                                {% endif %}
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -155,7 +160,12 @@
                         {% if post.image_file %}
                         <div class="memory-gallery {% if post.image_file.split(',')|length == 1 %}single-image{% endif %}">
                             {% for img in post.image_file.split(',') %}
-                            <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" loading="lazy">
+                                {% set ext = img.split('.')[-1]|lower %}
+                                {% if ext in ['mp4', 'webm'] %}
+                                    <video src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" controls style="object-fit: cover; background: #000; max-height: 500px; width: 100%;"></video>
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" loading="lazy">
+                                {% endif %}
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -225,10 +235,18 @@
                                 {% for p in all_user_posts %}
                                 {% if p.image_file %}
                                 {% for img in p.image_file.split(',') %}
-                                <img src="{{ url_for('static', filename='memory_pics/' + img) }}"
-                                    class="gallery-select-img" data-filename="{{ img }}"
-                                    style="width: 60px; height: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent;" loading="lazy"
-                                    onclick="toggleGalleryImage(this)">
+                                    {% set ext = img.split('.')[-1]|lower %}
+                                    {% if ext in ['mp4', 'webm'] %}
+                                        <video src="{{ url_for('static', filename='memory_pics/' + img) }}"
+                                            class="gallery-select-img" data-filename="{{ img }}"
+                                            style="width: 60px; height: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; background:#000;"
+                                            onclick="toggleGalleryImage(this)"></video>
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='memory_pics/' + img) }}"
+                                            class="gallery-select-img" data-filename="{{ img }}"
+                                            style="width: 60px; height: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent;" loading="lazy"
+                                            onclick="toggleGalleryImage(this)">
+                                    {% endif %}
                                 {% endfor %}
                                 {% endif %}
                                 {% endfor %}
@@ -236,8 +254,8 @@
                         </div>
 
                         <div
-                            style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                            <div style="display: flex; gap: 15px;">
+                            style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                                 <label for="image_mementgram"
                                     style="cursor: pointer; color: var(--accent-orange); display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: bold;">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -351,7 +369,12 @@
                     {% if g_post.image_file %}
                     <div class="memory-gallery {% if g_post.image_file.split(',')|length == 1 %}single-image{% endif %}">
                         {% for img in g_post.image_file.split(',') %}
-                        <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                            {% set ext = img.split('.')[-1]|lower %}
+                            {% if ext in ['mp4', 'webm'] %}
+                                <video src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" controls style="object-fit: cover; background: #000; max-height: 500px; width: 100%;"></video>
+                            {% else %}
+                                <img src="{{ url_for('static', filename='memory_pics/' + img) }}" class="memory-img" alt="Post Image" loading="lazy">
+                            {% endif %}
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -808,15 +831,15 @@
 
     // Arkaplan değiştirme
     function changeBg(url) {
-        document.getElementById('desktopBg').style.backgroundImage = "url('" + url + "')";
+        document.getElementById('desktopBg').style.setProperty('background-image', "url('" + url + "')", 'important');
         localStorage.setItem('selectedWallpaper', url);
     }
 
     // Sayfa yüklendiğinde arkaplanı uygula ve açık olan pencereyi geri getir
-    (function() {
+    document.addEventListener("DOMContentLoaded", function() {
         const savedWallpaper = localStorage.getItem('selectedWallpaper');
         if (savedWallpaper) {
-            document.getElementById('desktopBg').style.backgroundImage = "url('" + savedWallpaper + "')";
+            document.getElementById('desktopBg').style.setProperty('background-image', "url('" + savedWallpaper + "')", 'important');
         }
 
         const activeWindow = sessionStorage.getItem('activeWindow');
@@ -834,7 +857,7 @@
             document.getElementById('welcomeModal').style.display = 'flex';
             localStorage.setItem('welcomeShown', 'true');
         }
-    })();
+    });
 
     var currentSlide = 0;
     var totalSlides = 4;
@@ -884,9 +907,9 @@
             previewContainer.innerHTML = '';
 
             Array.from(accumulatedFiles.files).forEach(file => {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function (evt) {
+                const reader = new FileReader();
+                reader.onload = function (evt) {
+                    if (file.type.startsWith('image/')) {
                         const img = document.createElement('img');
                         img.src = evt.target.result;
                         img.className = 'preview-img';
@@ -895,9 +918,20 @@
                         img.style.objectFit = 'cover';
                         img.style.borderRadius = '5px';
                         previewContainer.appendChild(img);
+                    } else if (file.type.startsWith('video/')) {
+                        const vid = document.createElement('video');
+                        vid.src = evt.target.result;
+                        vid.className = 'preview-img';
+                        vid.style.width = '60px';
+                        vid.style.height = '60px';
+                        vid.style.objectFit = 'cover';
+                        vid.style.borderRadius = '5px';
+                        vid.style.background = '#000';
+                        vid.muted = true;
+                        previewContainer.appendChild(vid);
                     }
-                    reader.readAsDataURL(file);
                 }
+                reader.readAsDataURL(file);
             });
         });
     }

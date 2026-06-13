@@ -3,8 +3,8 @@ from werkzeug.utils import secure_filename
 from flask import render_template, flash, redirect, url_for, request, current_app, session
 from app import db, limiter
 from app.main import bp
-from app.main.forms import EditProfileForm, PostForm, CommentForm, VerifySecurityForm, EmptyForm
-from app.models import User, Post, Comment, Notification, Group, Achievement
+from app.main.forms import EditProfileForm, PostForm, CommentForm, VerifySecurityForm, EmptyForm, StoryForm
+from app.models import User, Post, Comment, Notification, Group, Achievement, Story
 from app.achievements import check_achievements
 import random
 import re
@@ -50,6 +50,9 @@ def index():
     comment_form = CommentForm()
     edit_profile_form = EditProfileForm()
     empty_form = EmptyForm()
+    story_form = StoryForm()
+    if current_user.is_authenticated:
+        story_form.groups.choices = [(g.id, g.name) for g in current_user.groups]
     if request.method == 'GET' and current_user.is_authenticated:
         edit_profile_form.username.data = current_user.username
         edit_profile_form.email.data = current_user.email
@@ -70,33 +73,37 @@ def index():
                 picture_path = os.path.join(current_app.root_path, 'static', 'memory_pics', unique_filename)
                 os.makedirs(os.path.dirname(picture_path), exist_ok=True)
                 
-                from PIL import Image, ExifTags
-                try:
-                    img = Image.open(picture_file)
-                    
-                    try:
-                        for orientation in ExifTags.TAGS.keys():
-                            if ExifTags.TAGS[orientation] == 'Orientation':
-                                break
-                        exif = img._getexif()
-                        if exif is not None:
-                            orientation_value = exif.get(orientation)
-                            if orientation_value == 3:
-                                img = img.rotate(180, expand=True)
-                            elif orientation_value == 6:
-                                img = img.rotate(270, expand=True)
-                            elif orientation_value == 8:
-                                img = img.rotate(90, expand=True)
-                    except (AttributeError, KeyError, IndexError):
-                        pass
-
-                    if img.mode in ("RGBA", "P"):
-                        img = img.convert("RGB")
-                    img.save(picture_path, format='JPEG', quality=95)
+                if ext.lower() in ['.mp4', '.webm']:
+                    picture_file.save(picture_path)
                     image_filenames.append(unique_filename)
-                except Exception as e:
-                    print("Pillow yükleme hatası:", e)
-                    continue
+                else:
+                    from PIL import Image, ExifTags
+                    try:
+                        img = Image.open(picture_file)
+                        
+                        try:
+                            for orientation in ExifTags.TAGS.keys():
+                                if ExifTags.TAGS[orientation] == 'Orientation':
+                                    break
+                            exif = img._getexif()
+                            if exif is not None:
+                                orientation_value = exif.get(orientation)
+                                if orientation_value == 3:
+                                    img = img.rotate(180, expand=True)
+                                elif orientation_value == 6:
+                                    img = img.rotate(270, expand=True)
+                                elif orientation_value == 8:
+                                    img = img.rotate(90, expand=True)
+                        except (AttributeError, KeyError, IndexError):
+                            pass
+
+                        if img.mode in ("RGBA", "P"):
+                            img = img.convert("RGB")
+                        img.save(picture_path, format='JPEG', quality=95)
+                        image_filenames.append(unique_filename)
+                    except Exception as e:
+                        print("Pillow yükleme hatası:", e)
+                        continue
                 
         existing_images_data = request.form.get('existing_images') or form.existing_images.data
         if existing_images_data:
@@ -201,7 +208,7 @@ def index():
                 'top_users': sorted_users
             }
 
-    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, empty_form=empty_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts, global_pagination=global_pagination, discover_pagination=discover_pagination, posts_pagination=posts_pagination, group_leaderboards=group_leaderboards)
+    return render_template('index.html', title='Ana Sayfa', form=form, comment_form=comment_form, edit_profile_form=edit_profile_form, empty_form=empty_form, story_form=story_form, posts=posts_pagination.items if posts_pagination else [], on_this_day_posts=on_this_day_posts, all_global_posts=all_global_posts, discover_users=discover_users, all_user_posts=all_user_posts, global_pagination=global_pagination, discover_pagination=discover_pagination, posts_pagination=posts_pagination, group_leaderboards=group_leaderboards)
 
 @bp.route('/user/<username>')
 @login_required
@@ -245,12 +252,33 @@ def post(post_id):
 @bp.route('/feed')
 @login_required
 def feed():
+    def delete_expired_stories():
+        try:
+            expiration_time = datetime.now(timezone.utc) - timedelta(hours=24)
+            expired_stories = db.session.scalars(db.select(Story).where(Story.timestamp < expiration_time)).all()
+            for st in expired_stories:
+                file_path = os.path.join(current_app.root_path, 'static/stories', st.media_file)
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except Exception as e:
+                        print(f"Error deleting file {file_path}: {e}")
+                db.session.delete(st)
+            if expired_stories:
+                db.session.commit()
+        except Exception as e:
+            print(f"Error in delete_expired_stories: {e}")
+
+    delete_expired_stories()
+    
     page = request.args.get('page', 1, type=int)
     query = current_user.followed_posts()
     posts_pagination = db.paginate(query, page=page, per_page=10, error_out=False)
     comment_form = CommentForm()
     empty_form = EmptyForm()
-    return render_template('feed.html', title='Akış', posts=posts_pagination.items, comment_form=comment_form, posts_pagination=posts_pagination, empty_form=empty_form)
+    story_form = StoryForm()
+    story_form.groups.choices = [(g.id, g.name) for g in current_user.groups]
+    return render_template('feed.html', title='Akış', posts=posts_pagination.items, comment_form=comment_form, posts_pagination=posts_pagination, empty_form=empty_form, story_form=story_form)
 
 @bp.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
@@ -304,7 +332,7 @@ def add_comment(post_id):
         
         # Etiketleme (Mentions) kontrolü
         import re
-        mentions = re.findall(r'@([a-zA-Z0-9_]+)', comment_body)
+        mentions = re.findall(r'@([a-zA-Z0-9_ğüşöçİĞÜŞÖÇ]+)', comment_body)
         for username in set(mentions):
             if username.lower() != current_user.username.lower():
                 user_to_notify = db.session.scalar(db.select(User).where(User.username.ilike(username)))
@@ -653,9 +681,12 @@ def admin_reset_password(user_id):
     if form.validate_on_submit():
         user = db.session.get(User, user_id)
         if user:
-            user.set_password('123456')
+            new_password = request.form.get('new_password')
+            if not new_password:
+                new_password = '123456'
+            user.set_password(new_password)
             db.session.commit()
-            flash(f'{user.username} adlı kullanıcının şifresi başarıyla "123456" olarak sıfırlandı.')
+            flash(f'{user.username} adlı kullanıcının şifresi başarıyla "{new_password}" olarak değiştirildi.')
     return redirect(url_for('main.admin_panel'))
 
 @bp.route('/admin/delete/<int:user_id>', methods=['POST'])
@@ -792,3 +823,123 @@ def mentionable_users():
         users = db.session.scalars(db.select(User).join(User.groups).filter(Group.id.in_(group_ids)).distinct()).all()
         
     return {'users': [{'username': u.username, 'avatar': u.avatar(30)} for u in users if u != current_user]}
+
+@bp.route('/add_story', methods=['POST'])
+@login_required
+@limiter.limit("5 per minute")
+def add_story():
+    form = StoryForm()
+    form.groups.choices = [(g.id, g.name) for g in current_user.groups]
+    if form.validate_on_submit():
+        if form.media.data:
+            f = form.media.data
+            ext = f.filename.rsplit('.', 1)[1].lower() if '.' in f.filename else ''
+            filename = secure_filename(f"{current_user.username}_story_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}")
+            
+            stories_dir = os.path.join(current_app.root_path, 'static/stories')
+            os.makedirs(stories_dir, exist_ok=True)
+            
+            f.save(os.path.join(stories_dir, filename))
+            
+            is_vid = ext in ['mp4', 'webm']
+            story = Story(author=current_user, media_file=filename, is_video=is_vid)
+            
+            if current_user.groups:
+                if len(current_user.groups) > 1 and form.groups.data:
+                    for group_id in form.groups.data:
+                        group = db.session.get(Group, group_id)
+                        if group and group in current_user.groups:
+                            story.groups.append(group)
+                    if not story.groups:
+                        for g in current_user.groups:
+                            story.groups.append(g)
+                else:
+                    for g in current_user.groups:
+                        story.groups.append(g)
+            
+            db.session.add(story)
+            db.session.commit()
+            check_achievements(current_user)
+            flash('Hikayen başarıyla paylaşıldı!', 'success')
+        else:
+            flash('Lütfen bir dosya seçin.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{getattr(form, field).label.text} hatası: {error}', 'danger')
+    return redirect(url_for('main.feed'))
+
+from flask import jsonify
+
+@bp.route('/api/stories')
+@login_required
+def api_stories():
+    user_groups = [g.id for g in current_user.groups]
+    if not user_groups:
+        query = db.select(Story).where(Story.user_id == current_user.id).order_by(Story.timestamp.asc())
+    else:
+        query = db.select(Story).outerjoin(Story.groups).where(
+            sa.or_(
+                Story.user_id == current_user.id,
+                Group.id.in_(user_groups)
+            )
+        ).order_by(Story.timestamp.asc()).distinct()
+    
+    stories = db.session.scalars(query).all()
+    
+    users_with_stories = {}
+    for st in stories:
+        uid = st.user_id
+        if uid not in users_with_stories:
+            users_with_stories[uid] = {
+                'id': uid,
+                'username': st.author.username,
+                'avatar': st.author.avatar(60),
+                'items': []
+            }
+        users_with_stories[uid]['items'].append({
+            'id': st.id,
+            'media': f'/static/stories/{st.media_file}',
+            'is_video': st.is_video,
+            'timestamp': st.timestamp.isoformat(),
+            'viewers': [{'username': v.username, 'avatar': v.avatar(30)} for v in st.viewers],
+            'likes': [{'username': l.username, 'avatar': l.avatar(30)} for l in st.likers],
+            'liked_by_me': current_user in st.likers,
+            'viewed_by_me': (current_user in st.viewers) or (current_user.id == st.user_id)
+        })
+        
+    result = list(users_with_stories.values())
+    result.sort(key=lambda x: (x['id'] != current_user.id, x['username']))
+    
+    return jsonify(result)
+
+@bp.route('/api/story/<int:story_id>/view', methods=['POST'])
+@login_required
+def view_story(story_id):
+    story = db.session.get(Story, story_id)
+    if not story:
+        return jsonify({'error': 'Not found'}), 404
+    if current_user not in story.viewers and story.author != current_user:
+        story.viewers.append(current_user)
+        db.session.commit()
+    return jsonify({'success': True})
+
+@bp.route('/api/story/<int:story_id>/like', methods=['POST'])
+@login_required
+def like_story(story_id):
+    story = db.session.get(Story, story_id)
+    if not story:
+        return jsonify({'error': 'Not found'}), 404
+    
+    if current_user in story.likers:
+        story.likers.remove(current_user)
+        action = 'unliked'
+    else:
+        story.likers.append(current_user)
+        action = 'liked'
+        if story.author != current_user:
+            notif = Notification(user=story.author, message=f"{current_user.username} hikayeni beğendi.", link=url_for('main.feed'))
+            db.session.add(notif)
+            
+    db.session.commit()
+    return jsonify({'success': True, 'action': action})

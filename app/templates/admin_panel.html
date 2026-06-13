@@ -33,9 +33,10 @@
                             <button type="submit" class="btn" style="background-color: #4CAF50; font-size: 12px; padding: 5px 10px;">Onayla</button>
                         {% endif %}
                     </form>
-                    <form action="{{ url_for('main.admin_reset_password', user_id=u.id) }}" method="post" onsubmit="return confirm('Bu kullanıcının şifresini 123456 olarak sıfırlamak istediğinize emin misiniz?');">
+                    <form action="{{ url_for('main.admin_reset_password', user_id=u.id) }}" method="post" id="reset-form-{{ u.id }}">
                         {{ form.hidden_tag() }}
-                        <button type="submit" class="btn" style="background-color: #2196F3; font-size: 12px; padding: 5px 10px;" title="Şifresini 123456 Yapar">Şifre Sıfırla</button>
+                        <input type="hidden" name="new_password" id="new-pw-{{ u.id }}" value="">
+                        <button type="button" class="btn" style="background-color: #2196F3; font-size: 12px; padding: 5px 10px;" onclick="let pw = prompt('{{ u.username }} için yeni şifre belirleyin:', '123456'); if(pw !== null && pw.trim() !== '') { document.getElementById('new-pw-{{ u.id }}').value = pw; document.getElementById('reset-form-{{ u.id }}').submit(); }">Şifre Değiştir</button>
                     </form>
                     <form action="{{ url_for('main.delete_user', user_id=u.id) }}" method="post" onsubmit="return confirm('Bu kullanıcıyı kalıcı olarak silmek istediğinize emin misiniz?');">
                         {{ form.hidden_tag() }}
@@ -61,6 +62,11 @@
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     {% if not u.is_admin %}
+                    <form action="{{ url_for('main.admin_reset_password', user_id=u.id) }}" method="post" id="reset-form-{{ u.id }}">
+                        {{ form.hidden_tag() }}
+                        <input type="hidden" name="new_password" id="new-pw-{{ u.id }}" value="">
+                        <button type="button" class="btn" style="background-color: #2196F3; padding: 5px 10px; font-size: 12px;" onclick="let pw = prompt('{{ u.username }} için yeni şifre belirleyin:', '123456'); if(pw !== null && pw.trim() !== '') { document.getElementById('new-pw-{{ u.id }}').value = pw; document.getElementById('reset-form-{{ u.id }}').submit(); }">Şifre Değiştir</button>
+                    </form>
                     <form action="{{ url_for('main.delete_user', user_id=u.id) }}" method="post" onsubmit="return confirm('Bu onaylı kullanıcıyı silmek istediğinize emin misiniz?');">
                         {{ form.hidden_tag() }}
                         <button type="submit" class="btn" style="background-color: #f44336; padding: 5px 10px; font-size: 12px;">Hesabı Sil</button>

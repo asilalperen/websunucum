@@ -45,6 +45,44 @@ saved_posts = sa.Table(
     sa.Column('post_id', sa.Integer, sa.ForeignKey('post.id'), primary_key=True)
 )
 
+story_group = sa.Table(
+    'story_group',
+    db.metadata,
+    sa.Column('story_id', sa.Integer, sa.ForeignKey('story.id'), primary_key=True),
+    sa.Column('group_id', sa.Integer, sa.ForeignKey('group.id'), primary_key=True)
+)
+
+story_views = sa.Table(
+    'story_views',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
+    sa.Column('story_id', sa.Integer, sa.ForeignKey('story.id'), primary_key=True),
+    sa.Column('viewed_at', sa.DateTime, default=lambda: datetime.now(timezone.utc))
+)
+
+story_likes = sa.Table(
+    'story_likes',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
+    sa.Column('story_id', sa.Integer, sa.ForeignKey('story.id'), primary_key=True),
+    sa.Column('liked_at', sa.DateTime, default=lambda: datetime.now(timezone.utc))
+)
+
+class Story(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
+    media_file: so.Mapped[str] = so.mapped_column(sa.String(120))
+    is_video: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
+    timestamp: so.Mapped[datetime] = so.mapped_column(index=True, default=lambda: datetime.now(timezone.utc))
+    
+    author: so.Mapped['User'] = so.relationship(back_populates='stories')
+    groups: so.Mapped[list['Group']] = so.relationship(secondary=story_group, back_populates='stories')
+    viewers: so.Mapped[list['User']] = so.relationship(secondary=story_views, back_populates='viewed_stories')
+    likers: so.Mapped[list['User']] = so.relationship(secondary=story_likes, back_populates='liked_stories')
+
+    def __repr__(self):
+        return f'<Story {self.id} by {self.author.username}>'
+
 class Achievement(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, index=True)
@@ -63,6 +101,7 @@ class Group(db.Model):
     
     users: so.Mapped[list['User']] = so.relationship(secondary=user_group, back_populates='groups')
     posts: so.Mapped[list['Post']] = so.relationship(secondary=post_group, back_populates='groups')
+    stories: so.Mapped[list['Story']] = so.relationship(secondary=story_group, back_populates='groups')
     
     def __repr__(self):
         return f'<Group {self.name}>'
@@ -89,6 +128,9 @@ class User(UserMixin, db.Model):
     comment_likes: so.WriteOnlyMapped['CommentLike'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
     notifications: so.WriteOnlyMapped['Notification'] = so.relationship(back_populates='user', cascade='all, delete-orphan')
     saved_posts: so.WriteOnlyMapped['Post'] = so.relationship(secondary=saved_posts, passive_deletes=True)
+    stories: so.WriteOnlyMapped['Story'] = so.relationship(back_populates='author', cascade='all, delete-orphan')
+    viewed_stories: so.WriteOnlyMapped['Story'] = so.relationship(secondary=story_views, back_populates='viewers')
+    liked_stories: so.WriteOnlyMapped['Story'] = so.relationship(secondary=story_likes, back_populates='likers')
     
     # Takipçi ilişkisi (Many-to-Many)
     followed: so.WriteOnlyMapped['User'] = so.relationship(

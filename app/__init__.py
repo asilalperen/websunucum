@@ -7,6 +7,7 @@ from flask_mail import Mail
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Eklentileri dışarıda tanımlıyoruz (Factory Pattern kuralı)
 db = SQLAlchemy()
@@ -19,6 +20,10 @@ login.login_view = 'auth.login'  # Blueprint kullandığımız için auth.login 
 
 def create_app(config_class=Config):
     app = Flask(__name__)
+    
+    # PythonAnywhere arkasındaki gerçek IP'leri alabilmek için ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    
     app.config.from_object(config_class)
 
     # Eklentileri bu uygulama örneğine bağlıyoruz
@@ -64,7 +69,7 @@ def create_app(config_class=Config):
         def replace_match(match):
             username = match.group(1)
             return f'<a href="/user/{username}" style="color: var(--accent-orange); font-weight: bold; text-decoration: none;">@{username}</a>'
-        html = re.sub(r'@([a-zA-Z0-9_]+)', replace_match, text)
+        html = re.sub(r'@([a-zA-Z0-9_ğüşöçİĞÜŞÖÇ]+)', replace_match, text)
         return Markup(html)
 
     app.jinja_env.filters['mentions'] = mentions_filter
