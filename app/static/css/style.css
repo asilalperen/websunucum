@@ -1317,3 +1317,180 @@ body.modal-open {
     90% { right: 20px; opacity: 1; }
     100% { right: -400px; opacity: 0; }
 }
+
+/* =========================================
+   MOBİL (RESPONSIVE) TASARIM
+   ========================================= */
+.hamburger-menu {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    gap: 5px;
+    z-index: 1001;
+}
+
+.hamburger-menu span {
+    width: 25px;
+    height: 3px;
+    background-color: var(--accent-orange);
+    border-radius: 3px;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Hamburger -> Çarpı Animasyonu */
+.hamburger-menu.active span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-menu.active span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+@media (max-width: 768px) {
+    .hamburger-menu {
+        display: flex;
+    }
+
+    .navbar {
+        padding: 15px 20px;
+        position: relative;
+    }
+
+    .navbar-brand {
+        font-size: 1.3em;
+    }
+
+    .navbar-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--box-bg);
+        flex-direction: column;
+        padding: 10px 0;
+        border-bottom: 3px solid var(--accent-orange);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        z-index: 1000;
+    }
+
+    .navbar-links.active {
+        display: flex;
+    }
+
+    .navbar-links a {
+        margin: 5px 20px;
+        font-size: 1.1em;
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+    }
+    
+    .navbar-links a:last-child {
+        border-bottom: none;
+    }
+
+    .container {
+        margin: 20px 10px;
+        padding: 15px;
+        width: auto !important;
+    }
+
+    .os-window, #mementgramWindow {
+        width: 95% !important;
+        max-width: none;
+        height: 85vh;
+        max-height: 90vh;
+    }
+
+    /* Masaüstü İkonlarının Mobildeki Dizilimi */
+    .desktop-environment {
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        justify-content: flex-start;
+        gap: 15px;
+        padding: 20px;
+    }
+
+    .desktop-icon {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        width: 80px;
+        margin-bottom: 10px;
+    }
+
+    .masonry-grid {
+        column-count: 1; /* Mobilde tek sütun */
+    }
+
+    .global-music-player {
+        width: calc(100% - 40px) !important;
+        left: 20px !important;
+        right: 20px !important;
+        bottom: 10px !important;
+    }
+    
+    .mementgram-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    /* Girdi alanlarının mobilde dokunmaya daha uygun olması için */
+    input[type="submit"], .comment-submit-btn, .action-btn {
+        min-height: 44px;
+    }
+}
+
+/* Mentions Autocomplete */
+.mention-dropdown {
+    position: absolute;
+    background: var(--box-bg);
+    border: 1px solid var(--accent-orange);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 250px;
+    display: none;
+    flex-direction: column;
+    padding: 5px 0;
+    bottom: 100%;
+    margin-bottom: 5px;
+    left: 0;
+}
+
+@media (max-width: 768px) {
+    .mention-dropdown {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+.mention-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: var(--text-main);
+    font-size: 14px;
+}
+
+.mention-item:hover, .mention-item.active {
+    background: var(--input-bg);
+}
+
+.mention-item img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}

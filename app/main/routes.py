@@ -728,3 +728,16 @@ def set_radio():
         flash('Radyo güncellenirken bir hata oluştu.')
         
     return redirect(url_for('main.admin_panel'))
+
+@bp.route('/api/mentionable_users')
+@login_required
+def mentionable_users():
+    if current_user.is_admin:
+        users = db.session.scalars(db.select(User)).all()
+    else:
+        group_ids = [g.id for g in current_user.groups]
+        if not group_ids:
+            return {'users': []}
+        users = db.session.scalars(db.select(User).join(User.groups).filter(Group.id.in_(group_ids)).distinct()).all()
+        
+    return {'users': [{'username': u.username, 'avatar': u.avatar(30)} for u in users if u != current_user]}

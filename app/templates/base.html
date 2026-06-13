@@ -9,7 +9,12 @@
 <body>
     <nav class="navbar">
         <a class="navbar-brand" href="#" onclick="openTour(); return false;" title="Tanıtım Turunu Aç">MementOS</a>
-        <div class="navbar-links">
+        <div class="hamburger-menu" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="navbar-links" id="navbarLinks">
             <a href="{{ url_for('main.index') }}">Ana Ekran</a>
             {% if current_user.is_anonymous %}
                 <a href="{{ url_for('auth.login') }}">Giriş Yap</a>
@@ -124,6 +129,13 @@
             }
         }
         applyTheme(); // Sayfa yüklenirken hemen çalıştır (FOUC engellemek için)
+
+        function toggleMobileMenu() {
+            const links = document.getElementById('navbarLinks');
+            links.classList.toggle('active');
+            const hamburger = document.querySelector('.hamburger-menu');
+            hamburger.classList.toggle('active');
+        }
 
         function openTour() {
             if (window.location.pathname === '/' || window.location.pathname === '/index') {
@@ -370,6 +382,34 @@
                     }
                 })
                 .catch(error => console.error('Kaydetme işlemi başarısız:', error));
+            } else if (e.target.matches('.like-comment-form')) {
+                e.preventDefault();
+                const form = e.target;
+                const btn = form.querySelector('button');
+                const svg = btn.querySelector('svg');
+                const countSpan = form.nextElementSibling;
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.liked) {
+                        btn.style.color = '#ff4c4c';
+                        if (svg) svg.setAttribute('fill', 'currentColor');
+                    } else {
+                        btn.style.color = '#aaa';
+                        if (svg) svg.setAttribute('fill', 'none');
+                    }
+                    if (countSpan) {
+                        countSpan.innerText = data.like_count;
+                    }
+                })
+                .catch(error => console.error('Yorum beğeni işlemi başarısız:', error));
             }
         });
 
@@ -438,6 +478,13 @@
                             currentNavbar.innerHTML = newNavbar.innerHTML;
                         }
 
+                        // Mobil menü açıksa kapat
+                        if (currentNavbar && currentNavbar.classList.contains('active')) {
+                            currentNavbar.classList.remove('active');
+                            const hamburger = document.querySelector('.hamburger-menu');
+                            if (hamburger) hamburger.classList.remove('active');
+                        }
+
                         // Scriptleri tekrar çalıştır
                         const scripts = currentContainer.querySelectorAll("script");
                         scripts.forEach(oldScript => {
@@ -467,6 +514,102 @@
             window.addEventListener("popstate", function(e) {
                 window.location.reload();
             });
+        });
+    </script>
+    <script>
+        // Mentions (@) Autocomplete Logic
+        let mentionableUsers = [];
+        let activeMentionDropdown = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch('/api/mentionable_users')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.users) mentionableUsers = data.users;
+                })
+                .catch(err => console.error("Mention API error", err));
+        });
+
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('input[name="body"]')) {
+                const input = e.target;
+                const val = input.value;
+                const cursorPos = input.selectionStart;
+                
+                const textBeforeCursor = val.slice(0, cursorPos);
+                const match = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+                
+                if (match) {
+                    const searchTerm = match[1].toLowerCase();
+                    const filtered = mentionableUsers.filter(u => u.username.toLowerCase().includes(searchTerm));
+                    
+                    if (filtered.length > 0) {
+                        showMentionDropdown(input, filtered, match[1]);
+                    } else {
+                        hideMentionDropdown();
+                    }
+                } else {
+                    hideMentionDropdown();
+                }
+            }
+        });
+
+        function showMentionDropdown(input, users, typed) {
+            hideMentionDropdown();
+            
+            const dropdown = document.createElement('div');
+            dropdown.className = 'mention-dropdown';
+            
+            users.forEach((u) => {
+                const item = document.createElement('div');
+                item.className = 'mention-item';
+                item.innerHTML = `<img src="${u.avatar}" alt="avatar"> <span>${u.username}</span>`;
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); 
+                    insertMention(input, u.username, typed);
+                });
+                dropdown.appendChild(item);
+            });
+            
+            const form = input.closest('form');
+            if (form) {
+                if (getComputedStyle(form).position === 'static') {
+                    form.style.position = 'relative';
+                }
+                form.appendChild(dropdown);
+                dropdown.style.display = 'flex';
+                activeMentionDropdown = dropdown;
+            }
+        }
+
+        function hideMentionDropdown() {
+            if (activeMentionDropdown) {
+                activeMentionDropdown.remove();
+                activeMentionDropdown = null;
+            }
+        }
+
+        function insertMention(input, username, typed) {
+            const val = input.value;
+            const cursorPos = input.selectionStart;
+            const textBeforeCursor = val.slice(0, cursorPos);
+            const textAfterCursor = val.slice(cursorPos);
+            
+            const lastAtPos = textBeforeCursor.lastIndexOf('@' + typed);
+            if (lastAtPos !== -1) {
+                const newVal = val.slice(0, lastAtPos) + '@' + username + ' ' + textAfterCursor;
+                input.value = newVal;
+                input.focus();
+                const newPos = lastAtPos + username.length + 2;
+                input.setSelectionRange(newPos, newPos);
+            }
+            hideMentionDropdown();
+        }
+
+        document.addEventListener('focusout', function(e) {
+            if (e.target.matches('input[name="body"]')) {
+                setTimeout(hideMentionDropdown, 150);
+            }
         });
     </script>
 </body>

@@ -109,10 +109,12 @@
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <div style="display: flex; align-items: center; gap: 3px;">
-                                    <form action="{{ url_for('main.like_comment', comment_id=comment.id) }}" method="post" style="margin: 0;">
+                                    <form action="{{ url_for('main.like_comment', comment_id=comment.id) }}" method="post" class="like-comment-form" style="margin: 0;">
                                         {{ empty_form.hidden_tag() }}
                                         <button type="submit" style="background: none; border: none; cursor: pointer; color: {{ '#ff4c4c' if current_user.has_liked_comment(comment) else '#aaa' }}; padding: 0;" title="Beğen">
-                                            <i class="{{ 'fas' if current_user.has_liked_comment(comment) else 'far' }} fa-heart"></i>
+                                            <svg viewBox="0 0 24 24" fill="{{ 'currentColor' if current_user.has_liked_comment(comment) else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align: middle;">
+                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                            </svg>
                                         </button>
                                     </form>
                                     <span style="font-size: 11px; color: #888;">{{ comment.likes|length }}</span>
