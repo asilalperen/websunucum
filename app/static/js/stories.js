@@ -1,8 +1,31 @@
 let allStories = [];
 let currentUserStoryIndex = -1;
 let currentItemIndex = -1;
-let storyTimer = null;
+let currentProgressAnimation = null;
 let currentProgressBar = null;
+let isPaused = false;
+let storyTimerObj = null;
+
+class PausableTimeout {
+    constructor(callback, delay) {
+        this.callback = callback;
+        this.remaining = delay;
+        this.start = Date.now();
+        this.timerId = setTimeout(this.callback, this.remaining);
+    }
+    pause() {
+        clearTimeout(this.timerId);
+        this.remaining -= Date.now() - this.start;
+    }
+    resume() {
+        this.start = Date.now();
+        clearTimeout(this.timerId);
+        this.timerId = setTimeout(this.callback, this.remaining);
+    }
+    clear() {
+        clearTimeout(this.timerId);
+    }
+}
 
 async function loadStories() {
     try {
@@ -16,7 +39,7 @@ async function loadStories() {
 
 function renderStoryTray() {
     const tray = document.getElementById('story-tray');
-    // keep the first item (Own Story Button)
+    if (!tray) return;
     const ownBtn = tray.children[0];
     tray.innerHTML = '';
     tray.appendChild(ownBtn);
@@ -39,41 +62,59 @@ function renderStoryTray() {
 }
 
 function openAddStoryModal() {
-    document.getElementById('addStoryModal').style.display = 'flex';
+    const modal = document.getElementById('addStoryModal');
+    if(modal) modal.style.display = 'flex';
 }
 
 function openStoryViewer(userIndex) {
     if(userIndex < 0 || userIndex >= allStories.length) return;
     currentUserStoryIndex = userIndex;
     
-    // Find first unviewed, or start from 0
     const userObj = allStories[currentUserStoryIndex];
     let firstUnviewed = userObj.items.findIndex(item => !item.viewed_by_me);
     if(firstUnviewed === -1) firstUnviewed = 0;
     
     currentItemIndex = firstUnviewed;
+    isPaused = false;
     
     document.getElementById('storyViewerModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // block scrolling
+    document.body.style.overflow = 'hidden'; 
     showCurrentStoryItem();
 }
 
 function closeStoryViewer() {
     document.getElementById('storyViewerModal').style.display = 'none';
     document.body.style.overflow = '';
-    clearTimeout(storyTimer);
+    if(storyTimerObj) storyTimerObj.clear();
+    if(currentProgressAnimation) currentProgressAnimation.cancel();
     const vid = document.getElementById('sv-vid');
     vid.pause();
     vid.src = "";
-    loadStories(); // refresh tray
+    loadStories(); 
+}
+
+function togglePauseStory() {
+    isPaused = !isPaused;
+    const vidEl = document.getElementById('sv-vid');
+    
+    if (isPaused) {
+        if(vidEl.style.display === 'block') vidEl.pause();
+        if(currentProgressAnimation) currentProgressAnimation.pause();
+        if(storyTimerObj) storyTimerObj.pause();
+    } else {
+        if(vidEl.style.display === 'block') vidEl.play();
+        if(currentProgressAnimation) currentProgressAnimation.play();
+        if(storyTimerObj) storyTimerObj.resume();
+    }
 }
 
 function showCurrentStoryItem() {
-    clearTimeout(storyTimer);
+    if(storyTimerObj) storyTimerObj.clear();
+    if(currentProgressAnimation) currentProgressAnimation.cancel();
+    isPaused = false;
     
     const userObj = allStories[currentUserStoryIndex];
     if(!userObj || currentItemIndex >= userObj.items.length) {
-        // go to next user
         if(currentUserStoryIndex + 1 < allStories.length) {
             openStoryViewer(currentUserStoryIndex + 1);
         } else {
@@ -92,12 +133,10 @@ function showCurrentStoryItem() {
     
     const item = userObj.items[currentItemIndex];
     
-    // Header
     document.getElementById('sv-avatar').src = userObj.avatar;
     document.getElementById('sv-username').innerText = userObj.username;
     document.getElementById('sv-time').innerText = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     
-    // Progress Bars
     const progCont = document.getElementById('story-progress-container');
     progCont.innerHTML = '';
     userObj.items.forEach((it, idx) => {
@@ -109,7 +148,6 @@ function showCurrentStoryItem() {
         barFill.style.height = '100%';
         barFill.style.background = 'white';
         barFill.style.width = idx < currentItemIndex ? '100%' : '0%';
-        barFill.style.transition = 'width linear';
         
         barWrap.appendChild(barFill);
         progCont.appendChild(barWrap);
@@ -117,29 +155,28 @@ function showCurrentStoryItem() {
     
     currentProgressBar = document.getElementById(`sv-prog-${currentItemIndex}`);
     
-    // Media
     const imgEl = document.getElementById('sv-img');
     const vidEl = document.getElementById('sv-vid');
     
     imgEl.style.display = 'none';
     vidEl.style.display = 'none';
     
-    // Mark viewed
     if(!item.viewed_by_me) {
         fetch(`/api/story/${item.id}/view`, { method: 'POST' });
         item.viewed_by_me = true;
     }
     
-    // Likes
     const likeBtn = document.getElementById('sv-like-btn');
     likeBtn.innerText = item.liked_by_me ? '❤️' : '🤍';
     document.getElementById('sv-like-count').innerText = item.likes.length > 0 ? item.likes.length : '';
     
-    // Viewers list (only if it's my own story)
     const viewersCont = document.getElementById('sv-viewers-container');
-    const myUsername = document.querySelector('.profile-avatar-small').nextElementSibling.innerText.trim();
-    if(userObj.username === myUsername) {
+    const optionsMenu = document.getElementById('sv-options-menu');
+    
+    if(userObj.username === window.CURRENT_USERNAME) {
         viewersCont.style.display = 'block';
+        if(optionsMenu) optionsMenu.style.display = 'block';
+        
         const vList = document.getElementById('sv-viewers-list');
         vList.innerHTML = '';
         item.viewers.forEach(v => {
@@ -148,6 +185,7 @@ function showCurrentStoryItem() {
         if(item.viewers.length === 0) vList.innerHTML = '<span style="color:#aaa; font-size:12px;">Henüz kimse görmedi.</span>';
     } else {
         viewersCont.style.display = 'none';
+        if(optionsMenu) optionsMenu.style.display = 'none';
     }
 
     if(item.is_video) {
@@ -156,7 +194,7 @@ function showCurrentStoryItem() {
         vidEl.onloadedmetadata = () => {
             const duration = vidEl.duration * 1000;
             animateProgress(duration);
-            storyTimer = setTimeout(nextStoryItem, duration);
+            storyTimerObj = new PausableTimeout(nextStoryItem, duration);
         };
         vidEl.play();
     } else {
@@ -164,33 +202,58 @@ function showCurrentStoryItem() {
         imgEl.style.display = 'block';
         const duration = 10000;
         animateProgress(duration);
-        storyTimer = setTimeout(nextStoryItem, duration);
+        storyTimerObj = new PausableTimeout(nextStoryItem, duration);
     }
 }
 
 function animateProgress(duration) {
     if(!currentProgressBar) return;
-    // reset
-    currentProgressBar.style.transition = 'none';
     currentProgressBar.style.width = '0%';
-    
-    // force reflow
-    void currentProgressBar.offsetWidth;
-    
-    currentProgressBar.style.transition = `width ${duration}ms linear`;
-    currentProgressBar.style.width = '100%';
+    currentProgressAnimation = currentProgressBar.animate(
+        [{ width: '0%' }, { width: '100%' }],
+        { duration: duration, fill: 'forwards' }
+    );
 }
 
-function nextStoryItem() {
+function nextStoryItem(e) {
+    if(e) e.stopPropagation();
+    if(currentProgressAnimation) currentProgressAnimation.cancel();
     if(currentProgressBar) currentProgressBar.style.width = '100%';
     currentItemIndex++;
     showCurrentStoryItem();
 }
 
-function prevStoryItem() {
+function prevStoryItem(e) {
+    if(e) e.stopPropagation();
+    if(currentProgressAnimation) currentProgressAnimation.cancel();
     if(currentProgressBar) currentProgressBar.style.width = '0%';
     currentItemIndex--;
     showCurrentStoryItem();
+}
+
+async function deleteCurrentStory() {
+    const userObj = allStories[currentUserStoryIndex];
+    if(!userObj) return;
+    const item = userObj.items[currentItemIndex];
+    
+    if(!confirm("Bu hikayeyi silmek istediğinize emin misiniz?")) return;
+    
+    try {
+        const response = await fetch(`/api/story/${item.id}/delete`, { method: 'POST' });
+        const data = await response.json();
+        if(data.success) {
+            userObj.items.splice(currentItemIndex, 1);
+            if(userObj.items.length === 0) {
+                closeStoryViewer();
+            } else {
+                currentItemIndex = Math.max(0, currentItemIndex - 1);
+                showCurrentStoryItem();
+            }
+            if(typeof showToast === 'function') showToast("Hikaye silindi.");
+        }
+    } catch(e) {
+        console.error("Story delete failed", e);
+    }
 }
 
 async function likeCurrentStory() {
@@ -203,12 +266,11 @@ async function likeCurrentStory() {
     if(data.success) {
         if(data.action === 'liked') {
             item.liked_by_me = true;
-            item.likes.push({}); // dummy for count
+            item.likes.push({});
         } else {
             item.liked_by_me = false;
             item.likes.pop();
         }
-        // update UI immediately
         const likeBtn = document.getElementById('sv-like-btn');
         likeBtn.innerText = item.liked_by_me ? '❤️' : '🤍';
         document.getElementById('sv-like-count').innerText = item.likes.length > 0 ? item.likes.length : '';
@@ -217,4 +279,11 @@ async function likeCurrentStory() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadStories();
+    
+    const mediaContainer = document.getElementById('sv-media-container');
+    if (mediaContainer) {
+        mediaContainer.addEventListener('click', (e) => {
+            togglePauseStory();
+        });
+    }
 });

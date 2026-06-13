@@ -69,7 +69,7 @@ def create_app(config_class=Config):
         def replace_match(match):
             username = match.group(1)
             return f'<a href="/user/{username}" style="color: var(--accent-orange); font-weight: bold; text-decoration: none;">@{username}</a>'
-        html = re.sub(r'@([a-zA-Z0-9_ğüşöçİĞÜŞÖÇ]+)', replace_match, text)
+        html = re.sub(r'@([a-zA-Z0-9_ğüşöçıİĞÜŞÖÇ]+)', replace_match, text)
         return Markup(html)
 
     app.jinja_env.filters['mentions'] = mentions_filter

@@ -332,7 +332,7 @@ def add_comment(post_id):
         
         # Etiketleme (Mentions) kontrolü
         import re
-        mentions = re.findall(r'@([a-zA-Z0-9_ğüşöçİĞÜŞÖÇ]+)', comment_body)
+        mentions = re.findall(r'@([a-zA-Z0-9_ğüşöçıİĞÜŞÖÇ]+)', comment_body)
         for username in set(mentions):
             if username.lower() != current_user.username.lower():
                 user_to_notify = db.session.scalar(db.select(User).where(User.username.ilike(username)))
@@ -860,10 +860,17 @@ def add_story():
             db.session.add(story)
             db.session.commit()
             check_achievements(current_user)
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.accept_json:
+                return jsonify({'success': True})
             flash('Hikayen başarıyla paylaşıldı!', 'success')
         else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.accept_json:
+                return jsonify({'error': 'Lütfen bir dosya seçin.'}), 400
             flash('Lütfen bir dosya seçin.', 'danger')
     else:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.accept_json:
+            return jsonify({'error': 'Geçersiz form verisi.'}), 400
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f'{getattr(form, field).label.text} hatası: {error}', 'danger')
@@ -943,3 +950,19 @@ def like_story(story_id):
             
     db.session.commit()
     return jsonify({'success': True, 'action': action})
+
+@bp.route('/api/story/<int:story_id>/delete', methods=['POST'])
+@login_required
+def delete_story(story_id):
+    story = db.session.get(Story, story_id)
+    if not story or story.author != current_user:
+        return jsonify({'error': 'Unauthorized'}), 403
+    file_path = os.path.join(current_app.root_path, 'static/stories', story.media_file)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except:
+            pass
+    db.session.delete(story)
+    db.session.commit()
+    return jsonify({'success': True})

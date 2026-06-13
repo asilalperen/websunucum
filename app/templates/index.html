@@ -695,9 +695,20 @@
                 Ayarlar bölümünden <b>arka planını</b> dilediğin gibi değiştirebilir, <b>karanlık/aydınlık</b> temaya
                 geçiş yapabilirsin. Hatta sıkılırsan standart imlecini <b>LoL eldiveniyle</b> bile değiştirebilirsin!
             </p>
+        </div>
+
+        <!-- Slide 5: Yeni Özellikler -->
+        <div class="welcome-slide" id="slide-4" style="display: none; padding: 40px 30px;">
+            <span style="font-size: 60px; display: block; margin-bottom: 15px;">🚀</span>
+            <h3 style="margin-top: 0; color: var(--text-main);">Yepyeni Özellikler!</h3>
+            <div style="font-size: 14px; line-height: 1.6; color: var(--text-main); text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                • <b>Hikayeler (Stories):</b> Artık anılarını 24 saatlik hikaye olarak paylaşabilirsin.<br>
+                • <b>Mobil Uygulama:</b> Sol menüdeki "Uygulamayı İndir" ile telefonuna kurabilirsin.<br>
+                • <b>Müzik Radyosu:</b> Ekrandaki 🎵 butonu ile arka planda Spotify dinleyebilirsin.<br>
+                • <b>Grup ve Başarımlar:</b> Yepyeni başarımlar kazanıp Liderlik tablosunda yarışabilirsin!
+            </div>
             <button onclick="document.getElementById('welcomeModal').style.display='none'"
-                style="margin-top: 15px; background: var(--accent-orange); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(229, 107, 31, 0.4);">Hemen
-                Dene!</button>
+                style="margin-top: 20px; background: var(--accent-orange); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(229, 107, 31, 0.4);">Keşfetmeye Başla!</button>
         </div>
 
         <!-- Slide Navigation Buttons -->
@@ -710,6 +721,7 @@
             <div id="slideIndicators" style="display: flex; gap: 5px;">
                 <div class="slide-dot"
                     style="width: 10px; height: 10px; border-radius: 50%; background: var(--accent-orange);"></div>
+                <div class="slide-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
                 <div class="slide-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
                 <div class="slide-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
                 <div class="slide-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
@@ -860,7 +872,7 @@
     });
 
     var currentSlide = 0;
-    var totalSlides = 4;
+    var totalSlides = 5;
 
     function changeSlide(direction) {
         for (let i = 0; i < totalSlides; i++) {
