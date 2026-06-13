@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user, current_user
 import random
 import re
 from flask_mail import Message
-from app import db, mail
+from app import db, mail, limiter
 from app.auth import bp
 from app.auth.forms import LoginForm, RegistrationForm, VerifyEmailForm, ResetPasswordRequestForm, ResetPasswordForm
 from app.models import User
@@ -43,6 +43,7 @@ def send_password_reset_email(user):
         mail.send(msg)
 
 @bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
@@ -83,6 +84,7 @@ def logout():
     return redirect(url_for('main.index'))
 
 @bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per hour")
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
@@ -142,6 +144,7 @@ def verify_email():
     return render_template('verify_email.html', title='E-posta Doğrulama', form=form, user=user)
 
 @bp.route('/reset_password_request', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def reset_password_request():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))

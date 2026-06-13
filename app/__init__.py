@@ -4,12 +4,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 
 # Eklentileri dışarıda tanımlıyoruz (Factory Pattern kuralı)
 db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
 mail = Mail()
+limiter = Limiter(key_func=get_remote_address)
+talisman = Talisman()
 login.login_view = 'auth.login'  # Blueprint kullandığımız için auth.login oldu
 
 def create_app(config_class=Config):
@@ -21,6 +26,22 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     login.init_app(app)
     mail.init_app(app)
+    limiter.init_app(app)
+    talisman.init_app(
+        app,
+        content_security_policy={
+            'default-src': [
+                '\'self\'',
+                '\'unsafe-inline\'',
+                '\'unsafe-eval\'',
+                'https:',
+                'data:',
+                'blob:'
+            ]
+        },
+        force_https=False,
+        session_cookie_secure=False
+    )
 
     # BLUEPRINT'LERİ SİSTEME KAYDEDİYORUZ
     from app.auth import bp as auth_bp

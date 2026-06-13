@@ -1,7 +1,7 @@
 import os
 from werkzeug.utils import secure_filename
 from flask import render_template, flash, redirect, url_for, request, current_app, session
-from app import db
+from app import db, limiter
 from app.main import bp
 from app.main.forms import EditProfileForm, PostForm, CommentForm, VerifySecurityForm, EmptyForm
 from app.models import User, Post, Comment, Notification, Group, Achievement
@@ -41,6 +41,7 @@ def local_time_filter(dt, format='%d-%m-%Y %H:%M:%S'):
 
 @bp.route('/', methods=['GET', 'POST'])
 @bp.route('/index', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 @login_required
 def index():
     form = PostForm()
@@ -68,8 +69,34 @@ def index():
                 unique_filename = f"{name}_{uuid.uuid4().hex[:8]}{ext}"
                 picture_path = os.path.join(current_app.root_path, 'static', 'memory_pics', unique_filename)
                 os.makedirs(os.path.dirname(picture_path), exist_ok=True)
-                picture_file.save(picture_path)
-                image_filenames.append(unique_filename)
+                
+                from PIL import Image, ExifTags
+                try:
+                    img = Image.open(picture_file)
+                    
+                    try:
+                        for orientation in ExifTags.TAGS.keys():
+                            if ExifTags.TAGS[orientation] == 'Orientation':
+                                break
+                        exif = img._getexif()
+                        if exif is not None:
+                            orientation_value = exif.get(orientation)
+                            if orientation_value == 3:
+                                img = img.rotate(180, expand=True)
+                            elif orientation_value == 6:
+                                img = img.rotate(270, expand=True)
+                            elif orientation_value == 8:
+                                img = img.rotate(90, expand=True)
+                    except (AttributeError, KeyError, IndexError):
+                        pass
+
+                    if img.mode in ("RGBA", "P"):
+                        img = img.convert("RGB")
+                    img.save(picture_path, format='JPEG', quality=95)
+                    image_filenames.append(unique_filename)
+                except Exception as e:
+                    print("Pillow yükleme hatası:", e)
+                    continue
                 
         existing_images_data = request.form.get('existing_images') or form.existing_images.data
         if existing_images_data:
@@ -261,6 +288,7 @@ def delete_post(post_id):
     return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/add_comment/<int:post_id>', methods=['POST'])
+@limiter.limit("10 per minute")
 @login_required
 def add_comment(post_id):
     post = db.session.get(Post, post_id)
@@ -310,12 +338,35 @@ def edit_profile():
     if form.validate_on_submit():
         if form.profile_pic.data:
             picture_file = form.profile_pic.data
-            _, f_ext = os.path.splitext(picture_file.filename)
-            picture_filename = current_user.username + f_ext
+            picture_filename = current_user.username + '.jpg'
             picture_path = os.path.join(current_app.root_path, 'static', 'profile_pics', picture_filename)
             os.makedirs(os.path.dirname(picture_path), exist_ok=True)
-            picture_file.save(picture_path)
-            current_user.profile_pic = picture_filename
+            
+            from PIL import Image, ExifTags
+            try:
+                img = Image.open(picture_file)
+                try:
+                    for orientation in ExifTags.TAGS.keys():
+                        if ExifTags.TAGS[orientation] == 'Orientation':
+                            break
+                    exif = img._getexif()
+                    if exif is not None:
+                        orientation_value = exif.get(orientation)
+                        if orientation_value == 3:
+                            img = img.rotate(180, expand=True)
+                        elif orientation_value == 6:
+                            img = img.rotate(270, expand=True)
+                        elif orientation_value == 8:
+                            img = img.rotate(90, expand=True)
+                except (AttributeError, KeyError, IndexError):
+                    pass
+
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                img.save(picture_path, format='JPEG', quality=95)
+                current_user.profile_pic = picture_filename
+            except Exception as e:
+                print("Profil resmi yükleme hatası:", e)
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
         current_user.require_2fa = form.require_2fa.data

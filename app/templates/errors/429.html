@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; padding: 50px; background-color: var(--box-bg); border: 2px solid var(--accent-orange); border-radius: 15px; box-shadow: 0 0 20px var(--accent-orange); margin-top: 40px;">
+    <h1 style="color: var(--accent-orange); font-size: 4em; margin-bottom: 10px; text-shadow: 2px 2px 5px black;">429</h1>
+    <h2 style="color: var(--text-main); font-size: 2em; margin-bottom: 20px;">Biraz Yavaşla!</h2>
+    <p style="font-size: 1.2em; font-family: monospace; color: #aaa; background-color: #111; padding: 10px; border-radius: 5px; display: inline-block;">> MementOS sunucularını alevlendirdin... Lütfen biraz bekleyip tekrar dene.</p>
+    
+    <div style="margin: 40px auto; max-width: 450px;">
+        <p style="color: var(--text-main); font-size: 1.1em;">Spam koruması devreye girdi. Güvenliğin için sistem seni kısa süreliğine durdurdu.</p>
+    </div>
+    
+    <a href="{{ url_for('main.index') }}" style="display: inline-block; padding: 12px 25px; background-color: var(--accent-orange); color: white; border-radius: 5px; font-weight: bold; text-decoration: none; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">Ana Ekrana Dön</a>
+</div>
+{% endblock %}
